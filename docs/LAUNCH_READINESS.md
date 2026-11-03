@@ -22,9 +22,9 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 2. **Public enquiry and supplier-application abuse controls remain open.** These routes still accept anonymous submissions under narrowly scoped RLS policies and currently rely on an in-memory Express rate limiter. Add shared rate limiting, bot protection, validation, and operational monitoring before launch.
 3. **Configuration example is aligned.** `.env.example` now documents the server-side `SUPABASE_ANON_KEY` used by `server.ts`; the browser uses only the Vite publishable key. Both remain subject to RLS. Never expose a service-role secret to the browser.
 4. **README has been updated** to describe the buyer/supplier portal, product catalogue, RFQs, quotations, messaging, moderation and deployment setup.
-5. **Messaging is implemented but not launch-proven.** Buyer/supplier inboxes now show supplier names, support sending and manual refresh, and attempt read-receipt updates. Database participant policies exist. Realtime behavior, read-receipt persistence, unread indicators and full two-account E2E flows still need tests.
-6. **Supplier trust is not launch-ready.** Four existing records are unverified, have no website value in the database, and should not be represented as independently verified. Confirm legal identity, working website/contact, facility, product capabilities, MOQ, capacity, lead times, sample process, export experience and certification evidence. Record source, reviewer, date and scope.
-7. **Free hosting is a constraint.** Validate cold starts, sleeping behavior, database limits, storage, backups, abuse protection and recovery before choosing the public launch configuration.
+5. **Quote selection is now implemented but not E2E-proven.** Buyers can select one supplier from the quotation comparison; the selected factory sees the decision and its quote is locked against edits. Database RLS, unique selection index, and authenticated invoker RPC have been verified.\n6. **Messaging is implemented but not launch-proven.** Buyer/supplier inboxes now show supplier names, support sending and manual refresh, and attempt read-receipt updates. Database participant policies exist. Realtime behavior, read-receipt persistence, unread indicators and full two-account E2E flows still need tests.
+7. **Supplier trust is not launch-ready.** Four existing records are unverified, have no website value in the database, and should not be represented as independently verified. Confirm legal identity, working website/contact, facility, product capabilities, MOQ, capacity, lead times, sample process, export experience and certification evidence. Record source, reviewer, date and scope.
+8. **Free hosting is a constraint.** Validate cold starts, sleeping behavior, database limits, storage, backups, abuse protection and recovery before choosing the public launch configuration.
 
 ## Workstreams and acceptance gates
 
@@ -43,10 +43,10 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Buyer profile and company details.
 - [ ] Save/unsave suppliers and view shortlist.
 - [x] Anonymous RFQ RPC execution and anonymous RFQ table inserts revoked; live privilege checks passed.
-- [x] Anonymous RFQ RPC execution and anonymous RFQ table inserts revoked; live privilege checks passed.
 - [ ] Submit RFQ to 1–5 selected eligible manufacturers with validated quantity/specifications/destination/date using buyer and supplier test identities.
 - [ ] Buyer dashboard shows RFQ status, targeted suppliers and received quotations.
-- [ ] Buyer can compare quotes and communicate with suppliers.
+- [x] Buyer can compare quotations and select one supplier; supplier sees the decision and cannot edit the selected quote (database permissions and uniqueness checks passed; E2E still pending).
+- [ ] Buyer can communicate with suppliers and confirm next steps.
 - [ ] Privacy notice, consent/retention explanation and account deletion/contact process.
 
 **Pass condition:** A test buyer can complete the entire sourcing journey without admin/database intervention.
@@ -57,7 +57,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Approved supplier can edit company/storefront details and maintain product listings.
 - [ ] Product create/edit/archive, image upload/replacement/deletion and moderation.
 - [ ] Supplier sees only RFQs assigned to its manufacturer account.
-- [ ] Supplier submits, updates and withdraws quotations; buyer sees correct status and values.
+- [ ] Supplier submits and updates quotations; buyer sees correct status and values. Supplier withdrawal controls and expiry handling remain to be built.
+- [x] Supplier sees buyer quote-selection decisions and selected quotations are locked against supplier edits (database policy verified).
 - [ ] Supplier can respond in private conversation without seeing another supplier's quotes or buyer data beyond what is required.
 
 **Pass condition:** A test supplier can be approved, publish products, receive an assigned RFQ and submit a quote with no privilege escalation.
@@ -65,7 +66,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 ### D. RFQ, quotations and messaging
 - [ ] Verify atomic RFQ + target creation and rollback behavior.
 - [ ] Enforce published/eligible supplier selection and prevent duplicate targets.
-- [ ] Enforce buyer ownership, assigned-supplier access and quote uniqueness at database level.
+- [x] Enforce buyer ownership, assigned-supplier access and quote uniqueness at database level for RFQ targets and supplier quotes.
+- [x] Enforce one selected supplier per RFQ; selection is transactional and limited to the owning buyer account.
 - [ ] Validate quote currency, positive price, MOQ, lead time, validity date, status transitions and input limits.
 - [x] Buyer/supplier conversation panel, message persistence UI, manual refresh and read-receipt update UI implemented (not yet E2E verified).
 - [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh verified with separate test identities.
