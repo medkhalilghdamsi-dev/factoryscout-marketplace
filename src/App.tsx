@@ -34,15 +34,16 @@ export default function App() {
   const [supplierForm,setSupplierForm] = useState<SupplierApplication>({company:"",website:"",location:"",products:"",moq:"",leadTime:"",evidence:"",contactPage:"",contactName:"",honeypot:""});
   const [form,setForm] = useState<Enquiry>({manufacturerId:"",name:"",email:"",company:"",product:"",quantity:"",details:""});
   useEffect(()=>{
-    if(!supabase) return;
+    const client=supabase;
+    if(!client) return;
     let active=true;
     const loadSaved=async(userId?:string)=>{
       if(!userId){if(active)setSavedIds([]);return;}
-      const {data,error}=await supabase.from("saved_manufacturers").select("manufacturer_id").eq("user_id",userId).order("created_at",{ascending:false});
+      const {data,error}=await client.from("saved_manufacturers").select("manufacturer_id").eq("user_id",userId).order("created_at",{ascending:false});
       if(active&&!error)setSavedIds((data||[]).map(row=>row.manufacturer_id));
     };
-    void supabase.auth.getSession().then(({data})=>loadSaved(data.session?.user.id));
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{void loadSaved(session?.user.id);});
+    void client.auth.getSession().then(({data})=>loadSaved(data.session?.user.id));
+    const {data:{subscription}}=client.auth.onAuthStateChange((_event,session)=>{void loadSaved(session?.user.id);});
     return ()=>{active=false;subscription.unsubscribe();};
   },[]);
   useEffect(()=>{fetch("/api/manufacturers").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d)&&d.length)setItems(d)}).catch(()=>{});fetch("/api/products").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d))setProducts(d)}).catch(()=>{});},[]);
@@ -60,12 +61,13 @@ export default function App() {
   const toggleSaved=async(id:string)=>{
     const removing=savedIds.includes(id);
     setSavedIds(ids=>removing?ids.filter(x=>x!==id):[...ids,id]);
-    if(!supabase){setNotice("Sign in to keep your saved suppliers across devices.");return;}
-    const {data:{session}}=await supabase.auth.getSession();
+    const client=supabase;
+    if(!client){setNotice("Sign in to keep your saved suppliers across devices.");return;}
+    const {data:{session}}=await client.auth.getSession();
     if(!session?.user){setNotice("Sign in to keep your saved suppliers across devices.");return;}
     const result=removing
-      ? await supabase.from("saved_manufacturers").delete().eq("user_id",session.user.id).eq("manufacturer_id",id)
-      : await supabase.from("saved_manufacturers").insert({user_id:session.user.id,manufacturer_id:id});
+      ? await client.from("saved_manufacturers").delete().eq("user_id",session.user.id).eq("manufacturer_id",id)
+      : await client.from("saved_manufacturers").insert({user_id:session.user.id,manufacturer_id:id});
     if(result.error){setSavedIds(ids=>removing?[...ids,id]:ids.filter(x=>x!==id));setNotice("Could not update your saved suppliers. "+result.error.message);}
     else setNotice(removing?"Supplier removed from your saved list.":"Supplier saved to your buyer workspace.");
   };
