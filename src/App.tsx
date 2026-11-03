@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import AccountPortal from "./AccountPortal";
+import AccountPortal, { supabase } from "./AccountPortal";
 
 type Manufacturer = {
   id: string; name: string; region: string; category: string[]; summary: string;
@@ -33,6 +33,18 @@ export default function App() {
   const [productQuery,setProductQuery] = useState(""); const [productCategory,setProductCategory] = useState("All products"); const [productSort,setProductSort] = useState("newest"); const [samplesOnly,setSamplesOnly] = useState(false);
   const [supplierForm,setSupplierForm] = useState<SupplierApplication>({company:"",website:"",location:"",products:"",moq:"",leadTime:"",evidence:"",contactPage:"",contactName:"",honeypot:""});
   const [form,setForm] = useState<Enquiry>({manufacturerId:"",name:"",email:"",company:"",product:"",quantity:"",details:""});
+  useEffect(()=>{
+    if(!supabase) return;
+    let active=true;
+    const loadSaved=async(userId?:string)=>{
+      if(!userId){if(active)setSavedIds([]);return;}
+      const {data,error}=await supabase.from("saved_manufacturers").select("manufacturer_id").eq("user_id",userId).order("created_at",{ascending:false});
+      if(active&&!error)setSavedIds((data||[]).map(row=>row.manufacturer_id));
+    };
+    void supabase.auth.getSession().then(({data})=>loadSaved(data.session?.user.id));
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{void loadSaved(session?.user.id);});
+    return ()=>{active=false;subscription.unsubscribe();};
+  },[]);
   useEffect(()=>{fetch("/api/manufacturers").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d)&&d.length)setItems(d)}).catch(()=>{});fetch("/api/products").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d))setProducts(d)}).catch(()=>{});},[]);
   const filtered = useMemo(()=>items.filter(m=>{
     const text=[m.name,m.region,m.summary,...m.category,...m.capabilities].join(" ").toLowerCase();
@@ -45,7 +57,18 @@ export default function App() {
     return haystack.includes(productQuery.trim().toLowerCase()) && (productCategory==="All products" || p.product_type===productCategory) && (!samplesOnly || p.sample_available);
   }).sort((a,b)=>productSort==="name"?a.name.localeCompare(b.name):productSort==="moq"?(a.minimum_order??Number.MAX_SAFE_INTEGER)-(b.minimum_order??Number.MAX_SAFE_INTEGER):0),[products,productQuery,productCategory,productSort,samplesOnly]);
   const toggleCompare=(id:string)=>setCompareIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):ids.length<3?[...ids,id]:ids);
-  const toggleSaved=(id:string)=>setSavedIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]);
+  const toggleSaved=async(id:string)=>{
+    const removing=savedIds.includes(id);
+    setSavedIds(ids=>removing?ids.filter(x=>x!==id):[...ids,id]);
+    if(!supabase){setNotice("Sign in to keep your saved suppliers across devices.");return;}
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session?.user){setNotice("Sign in to keep your saved suppliers across devices.");return;}
+    const result=removing
+      ? await supabase.from("saved_manufacturers").delete().eq("user_id",session.user.id).eq("manufacturer_id",id)
+      : await supabase.from("saved_manufacturers").insert({user_id:session.user.id,manufacturer_id:id});
+    if(result.error){setSavedIds(ids=>removing?[...ids,id]:ids.filter(x=>x!==id));setNotice("Could not update your saved suppliers. "+result.error.message);}
+    else setNotice(removing?"Supplier removed from your saved list.":"Supplier saved to your buyer workspace.");
+  };
   const openEnquiry=(m:Manufacturer)=>{setSelected(m);setForm(f=>({...f,manufacturerId:m.id}));setShowForm(true);};
   const submit=async(e:React.FormEvent)=>{e.preventDefault();try{const r=await fetch("/api/enquiries",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"The enquiry service is unavailable.");setNotice("Your enquiry has been securely submitted.");setShowForm(false);setForm({manufacturerId:"",name:"",email:"",company:"",product:"",quantity:"",details:""});}catch(error){setNotice(error instanceof Error?error.message:"We could not submit your enquiry. Please try again.");}};
   const submitRFQ=async(e:React.FormEvent)=>{e.preventDefault();try{const r=await fetch("/api/rfqs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(rfq)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"We could not submit the RFQ.");setRfqNotice("Your request for quotation has been received. We will review the supplier matches.");setShowRfqForm(false);setRfq({name:"",email:"",company:"",productType:"",quantity:"",targetPrice:"",deliveryCountry:"",materialSpecs:"",sampleRequired:false,targetDate:"",manufacturerIds:[],honeypot:""});}catch(error){setRfqNotice(error instanceof Error?error.message:"RFQ submission failed. Please try again.");}};
