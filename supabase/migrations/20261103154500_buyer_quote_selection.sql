@@ -14,23 +14,28 @@ create unique index if not exists rfq_quote_decisions_one_selected_per_rfq
  on public.rfq_quote_decisions(rfq_id) where status='selected';
 create index if not exists rfq_quote_decisions_supplier_idx
  on public.rfq_quote_decisions(manufacturer_id,updated_at desc);
+create index if not exists rfq_quote_decisions_buyer_idx
+ on public.rfq_quote_decisions(buyer_id,updated_at desc);
 alter table public.rfq_quote_decisions enable row level security;
 revoke all on public.rfq_quote_decisions from anon,authenticated;
 grant select,insert,update on public.rfq_quote_decisions to authenticated;
 
 drop policy if exists "Buyers can read own quote decisions" on public.rfq_quote_decisions;
-create policy "Buyers can read own quote decisions"
- on public.rfq_quote_decisions for select to authenticated
- using (buyer_id=(select auth.uid()) and exists(
-   select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid())
- ));
 drop policy if exists "Assigned suppliers can read quote decisions" on public.rfq_quote_decisions;
-create policy "Assigned suppliers can read quote decisions"
+drop policy if exists "Participants can read quote decisions" on public.rfq_quote_decisions;
+create policy "Participants can read quote decisions"
  on public.rfq_quote_decisions for select to authenticated
- using (exists(
-   select 1 from public.supplier_accounts sa
-   where sa.owner_id=(select auth.uid()) and sa.manufacturer_id=rfq_quote_decisions.manufacturer_id and sa.status='approved'
- ));
+ using (
+   (buyer_id=(select auth.uid()) and exists(
+     select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid())
+   ))
+   or exists(
+     select 1 from public.supplier_accounts sa
+     where sa.owner_id=(select auth.uid())
+       and sa.manufacturer_id=rfq_quote_decisions.manufacturer_id
+       and sa.status='approved'
+   )
+ );
 drop policy if exists "Buyers can create own quote decisions" on public.rfq_quote_decisions;
 create policy "Buyers can create own quote decisions"
  on public.rfq_quote_decisions for insert to authenticated
