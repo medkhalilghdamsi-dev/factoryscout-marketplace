@@ -9,17 +9,17 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 ## Current verified baseline (2026-11-03)
 
 - React 19 + Vite frontend, Express API, Supabase Postgres/Auth/Storage, Render web service.
-- Render service: `factoryscout-marketplace`, Frankfurt, free plan; latest confirmed Render deployment is healthy but still points to commit `e5c4e4d` (2026-11-03 14:27 UTC). Later GitHub commits containing RFQ security, quote selection and admin audit work are not yet confirmed deployed; auto-deploy is enabled, so production must be rechecked before treating those changes as live.
+- Render service: `factoryscout-marketplace`, Frankfurt, free plan; the latest confirmed live deployment at the time of this audit is commit `52d5750` (2026-11-03 16:12 UTC). This includes the supplier prospect pipeline UI. New API middleware hardening and additional tests are on GitHub main after that deployment and are pending a fresh Render deployment confirmation; do not assume they are live until the deployed commit matches.
 - GitHub main branch has responsive marketplace shell, supplier storefront route, global search/category navigation and Playwright responsive tests.
-- Supabase currently contains 4 manufacturer rows and 0 products, profiles, supplier accounts, supplier applications, enquiries, RFQs, RFQ targets, supplier quotes, conversations, messages, or saved suppliers.
-- All 4 seeded manufacturers are published while marked `unverified`; they are research leads, not verified suppliers.
+- Live Supabase counts: 4 manufacturer rows, 5 researched supplier prospects, 0 products, 0 approved/pending supplier accounts, 0 supplier applications, 0 enquiries, 0 RFQs, 0 supplier quotes and 0 messages. The prospects are private admin research records, not marketplace suppliers.
+- All 4 seeded manufacturer profiles are published while marked `unverified`; they are research leads, not verified suppliers. Their public API records correctly expose `rfqEnabled: false`.
 - No Supabase Edge Functions are deployed.
 - Existing schema includes manufacturer/product catalogue, RFQ/targets, buyer/supplier accounts, saved manufacturers, quotations, moderation and product image storage. Live end-to-end behavior has not yet been proven.
 
 ## Audit findings to resolve before launch
 
 1. **RFQ submission permissions and validation are hardened, but the live journey still needs E2E testing.** Anonymous execution of the legacy `submit_rfq` RPC and anonymous inserts into `rfqs`/`rfq_targets` are revoked. The authenticated `submit_rfq_for_buyer` RPC validates request fields, requires a buyer account, validates published supplier targets, and creates RFQ targets/conversations atomically. The required authenticated insert grants are now present and the RLS policies restrict those writes to buyer accounts. Live privilege checks confirm anonymous users cannot insert into RFQ tables or execute either RFQ RPC.
-2. **Public enquiry and supplier-application abuse controls remain open.** These routes still accept anonymous submissions under narrowly scoped RLS policies and currently rely on an in-memory Express rate limiter. Add shared rate limiting, bot protection, validation, and operational monitoring before launch.
+2. **Public enquiry and supplier-application abuse controls remain open.** These routes still accept anonymous submissions under narrowly scoped RLS policies. The Express limiter now has per-IP/per-endpoint 8-per-15-minute limits, `Retry-After`, bounded in-memory storage and honeypot handling; this is not shared across multiple instances or restarts. Add durable/shared rate limiting, bot protection (e.g. verified challenge), email verification where appropriate, and operational monitoring before launch.
 3. **Configuration example is aligned.** `.env.example` now documents the server-side `SUPABASE_ANON_KEY` used by `server.ts`; the browser uses only the Vite publishable key. Both remain subject to RLS. Never expose a service-role secret to the browser.
 4. **README has been updated** to describe the buyer/supplier portal, product catalogue, RFQs, quotations, messaging, moderation and deployment setup.
 5. **Admin review audit trail is implemented.** Database triggers record supplier-account status changes, product moderation changes and manufacturer verification/publication changes. Only admins can read the event log; direct client writes are revoked. The admin workspace displays the latest 30 events with actor, timestamp and before/after state.
@@ -99,7 +99,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Review RLS and grants for every table, view, RPC and storage policy using buyer, supplier A, supplier B, anonymous and admin test identities.
 - [ ] Confirm no service-role key or private secret exists in Git history, client bundle, logs or public endpoints.
 - [ ] Validate all API inputs, output redaction, CORS, headers, CSRF/session assumptions and error handling.
-- [ ] Add shared rate limiting, bot protection, email verification and monitoring.
+- [ ] Replace the in-memory public-form limiter with durable/shared rate limiting; add bot protection, email verification and monitoring.
+- [x] Add baseline HTTP security headers (`nosniff`, frame denial, strict-origin referrer policy, restrictive permissions policy), disable Express fingerprinting, and bound in-memory rate-limit bucket growth; regression tests added and awaiting CI/deployment confirmation.
 - [ ] Add backup/restore and incident-response procedures; test a restore.
 - [ ] Add privacy notice, terms, supplier terms, acceptable-use, cookie/analytics disclosure, data retention and deletion workflow.
 - [ ] Run dependency/security audit, database advisors, performance checks and load tests.
@@ -122,6 +123,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Unit/integration tests for API and database RPCs; authenticated RFQ/quote/message journeys still need test identities.
 - [ ] E2E tests for buyer, supplier and admin journeys.
 - [x] Responsive browser tests across eight mobile/tablet/desktop viewports; product detail, storefront-to-product navigation, global material search and product-specific RFQ handoff are covered.
+- [ ] API security-header and public-form rate-limit regression tests added; awaiting CI confirmation.
 - [ ] Accessibility audit and browser/device compatibility.
 - [ ] Test empty, error, slow-network, expired-session, duplicate-submit and malicious-input cases.
 - [ ] Production smoke test after deployment; verify database-backed reads and writes.
