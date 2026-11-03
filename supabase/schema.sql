@@ -678,7 +678,7 @@ create table if not exists public.supplier_prospects (
  source_urls text[] not null default '{}',
  research_notes text not null default '',
  status text not null default 'researched'
-   check(status in ('researched','contacted','responded','interested','application_pending','approved','declined','not_a_fit')),
+   check(status in ('researched','contacted','responded','interested','application_pending','onboarded','declined','not_a_fit')),
  last_contacted_at timestamptz,
  created_at timestamptz not null default now(),
  updated_at timestamptz not null default now()
