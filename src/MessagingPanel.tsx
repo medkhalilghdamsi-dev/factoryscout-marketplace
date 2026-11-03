@@ -8,7 +8,7 @@ type Conversation = {
   buyer_id: string;
   supplier_owner_id: string;
   updated_at: string;
-  manufacturers?: { name?: string } | null;
+  rfq_targets?: { manufacturers?: { name?: string } | null } | null;
 };
 type Message = { id: string; conversation_id: string; sender_id: string; body: string; created_at: string; read_at: string | null };
 
@@ -26,7 +26,7 @@ export default function MessagingPanel({ userId, accountType }: { userId: string
     setLoading(true);
     const column = accountType === "buyer" ? "buyer_id" : "supplier_owner_id";
     const { data, error } = await supabase.from("rfq_conversations")
-      .select("id,rfq_id,manufacturer_id,buyer_id,supplier_owner_id,updated_at,manufacturers(name)")
+      .select("id,rfq_id,manufacturer_id,buyer_id,supplier_owner_id,updated_at,rfq_targets(manufacturers(name))")
       .eq(column, userId).order("updated_at", { ascending: false });
     if (error) setNotice("Conversations could not be loaded. Please refresh.");
     else {
@@ -79,7 +79,7 @@ export default function MessagingPanel({ userId, accountType }: { userId: string
         {conversations.map((conversation) => <button type="button" key={conversation.id}
           className={selectedId === conversation.id ? "conversation-choice active" : "conversation-choice"}
           aria-pressed={selectedId === conversation.id} onClick={() => setSelectedId(conversation.id)}>
-          <b>{accountType === "buyer" ? (conversation.manufacturers?.name || "Supplier conversation") : "Buyer request"}</b>
+          <b>{accountType === "buyer" ? (conversation.rfq_targets?.manufacturers?.name || "Supplier conversation") : "Buyer request"}</b>
           <span>RFQ {conversation.rfq_id.slice(0, 8).toUpperCase()}</span>
           <small>{new Date(conversation.updated_at).toLocaleDateString()}</small>
         </button>)}
