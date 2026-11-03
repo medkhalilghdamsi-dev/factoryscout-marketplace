@@ -18,6 +18,10 @@ for (const viewport of viewports) {
     await expect(page.locator(".marketplace-global-search")).toBeVisible();
     await expect(page.locator(".marketplace-category-nav")).toBeVisible();
     await expect(page.locator(".hero h1")).toBeVisible();
+    if (viewport.width >= 1181) {
+      const searchWidth = await page.locator(".marketplace-global-search").evaluate(el => el.getBoundingClientRect().width);
+      expect(searchWidth).toBeGreaterThanOrEqual(340);
+    }
     const dimensions = await page.evaluate(() => ({
       viewport: window.innerWidth,
       document: document.documentElement.scrollWidth,
