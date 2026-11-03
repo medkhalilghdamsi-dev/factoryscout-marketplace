@@ -47,6 +47,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [x] Anonymous RFQ RPC execution and anonymous RFQ table inserts revoked; live privilege checks passed.
 - [ ] Submit RFQ to 1–5 selected eligible manufacturers with validated quantity/specifications/destination/date using buyer and supplier test identities.
 - [ ] Buyer dashboard shows RFQ status, targeted suppliers and received quotations.
+- [x] Shareable product detail pages show supplier-published specifications, materials, techniques, MOQ, samples and lead time; product-specific RFQ handoff is covered by a responsive browser test.
 - [x] Buyer can compare quotations and select one supplier; supplier sees the decision and cannot edit the selected quote (database permissions and uniqueness checks passed; E2E still pending).
 - [ ] Buyer can communicate with suppliers and confirm next steps.
 - [ ] Privacy notice, consent/retention explanation and account deletion/contact process.
@@ -100,6 +101,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Add backup/restore and incident-response procedures; test a restore.
 - [ ] Add privacy notice, terms, supplier terms, acceptable-use, cookie/analytics disclosure, data retention and deletion workflow.
 - [ ] Run dependency/security audit, database advisors, performance checks and load tests.
+- [ ] Reduce the current 529 KB minified application chunk through code splitting and recheck real-device performance.
 - [ ] Verify health/readiness endpoints and alerting; document deployment rollback.
 
 **Pass condition:** No unresolved critical/high security issues; access-control tests pass; restore and rollback are demonstrated.
@@ -115,9 +117,9 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 **Pass condition:** No empty catalogue, no invented information, no supplier represented as verified without evidence, and enough verified supply to fulfill the marketplace promise.
 
 ### H. QA and launch
-- [ ] Unit/integration tests for API and database RPCs.
+- [ ] Unit/integration tests for API and database RPCs; authenticated RFQ/quote/message journeys still need test identities.
 - [ ] E2E tests for buyer, supplier and admin journeys.
-- [ ] Responsive browser tests across mobile/tablet/desktop.
+- [x] Responsive browser tests across eight mobile/tablet/desktop viewports; shareable product detail and RFQ handoff tested at 390px.
 - [ ] Accessibility audit and browser/device compatibility.
 - [ ] Test empty, error, slow-network, expired-session, duplicate-submit and malicious-input cases.
 - [ ] Production smoke test after deployment; verify database-backed reads and writes.
