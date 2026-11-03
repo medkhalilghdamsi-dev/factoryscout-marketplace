@@ -66,7 +66,7 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "Factory
 app.get("/api/manufacturers", async (_req, res) => {
   if (!databaseReady) return res.json(seed);
   try {
-    const rows = await supabase("manufacturers", { query: "select=*,supplier_accounts(status)&is_published=eq.true&order=name.asc" });
+    const rows = await supabase("manufacturers", { query: "select=*,supplier_accounts!supplier_accounts_manufacturer_id_fkey(status)&is_published=eq.true&order=name.asc" });
     return res.json(Array.isArray(rows) ? rows.map(mapManufacturer) : []);
   } catch { return res.status(503).json({ error: "Manufacturer directory is temporarily unavailable." }); }
 });
