@@ -48,6 +48,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Submit RFQ to 1–5 selected eligible manufacturers with validated quantity/specifications/destination/date using buyer and supplier test identities.
 - [ ] Buyer dashboard shows RFQ status, targeted suppliers and received quotations.
 - [x] Shareable product detail pages show supplier-published specifications, materials, techniques, MOQ, samples and lead time; product-specific RFQ handoff is covered by a responsive browser test.
+- [x] Supplier storefront product listings link to their shareable product detail pages.
+- [x] Global search routes matching product-name, material, technique and supplier queries to published product results; other queries filter the supplier directory.
 - [x] Buyer can compare quotations and select one supplier; supplier sees the decision and cannot edit the selected quote (database permissions and uniqueness checks passed; E2E still pending).
 - [ ] Buyer can communicate with suppliers and confirm next steps.
 - [ ] Privacy notice, consent/retention explanation and account deletion/contact process.
@@ -119,7 +121,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 ### H. QA and launch
 - [ ] Unit/integration tests for API and database RPCs; authenticated RFQ/quote/message journeys still need test identities.
 - [ ] E2E tests for buyer, supplier and admin journeys.
-- [x] Responsive browser tests across eight mobile/tablet/desktop viewports; shareable product detail and RFQ handoff tested at 390px.
+- [x] Responsive browser tests across eight mobile/tablet/desktop viewports; product detail, storefront-to-product navigation, global material search and product-specific RFQ handoff are covered.
 - [ ] Accessibility audit and browser/device compatibility.
 - [ ] Test empty, error, slow-network, expired-session, duplicate-submit and malicious-input cases.
 - [ ] Production smoke test after deployment; verify database-backed reads and writes.
