@@ -21,8 +21,9 @@ const seed: Manufacturer[] = [
   {id:"atll",name:"ATLL",region:"Casablanca, Morocco",category:["Streetwear","Hoodies","Apparel"],summary:"Moroccan apparel manufacturer included as a regional comparison option, not a Tunisian factory listing.",capabilities:["Hoodies","Embroidery","Garment production"],moq:"200 pieces per model (published)",leadTime:"Not publicly confirmed",evidence:"Supplier-published",evidenceNote:"Public website claims require direct confirmation; no independent audit has been completed by FactoryScout.",exportMarkets:["Not confirmed"],status:"Regional comparison"}
 ];
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
-const publicApiKey = process.env.SUPABASE_ANON_KEY;
-const databaseReady = Boolean(supabaseUrl && publicApiKey);
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// This key is server-only. Never expose it through Vite or return it from an API route.
+const databaseReady = Boolean(supabaseUrl && serviceRoleKey);
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimit(req: Request, res: Response, next: NextFunction) {
@@ -38,7 +39,7 @@ async function supabase(table: string, options: { method?: string; query?: strin
   if (!databaseReady) throw new Error("Database is not configured");
   const response = await fetch(`${supabaseUrl}/rest/v1/${table}${options.query ? `?${options.query}` : ""}`, {
     method: options.method || "GET",
-    headers: { apikey: publicApiKey!, Authorization: `Bearer ${publicApiKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    headers: { apikey: serviceRoleKey!, Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
     ...(options.body ? { body: JSON.stringify(options.body) } : {})
   });
   if (!response.ok) {
@@ -88,7 +89,7 @@ app.post("/api/enquiries", rateLimit, async (req, res) => {
 app.get("/api/products", async (_req, res) => {
   if (!databaseReady) return res.json([]);
   try {
-    const rows = await supabase("products", { query: "select=*&status=eq.published&order=created_at.desc" });
+    const rows = await supabase("products", { query: "select=*,manufacturers(name,region)&status=eq.published&manufacturers.is_published=eq.true&order=created_at.desc" });
     return res.json(Array.isArray(rows) ? rows : []);
   } catch { return res.status(503).json({ error: "Product catalogue is temporarily unavailable." }); }
 });
