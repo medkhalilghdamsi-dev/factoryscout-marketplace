@@ -756,3 +756,7 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
 .quote-select-button:disabled{opacity:.5;cursor:not-allowed}
 .quote-decision{display:inline-flex;align-items:center;margin-top:6px;padding:4px 8px;border-radius:5px;background:#f0f1ed;color:#59645b;font-size:11px;font-weight:650}
 .quote-decision.selected{background:#e4efe5;color:#245a32}
+
+.quote-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.quote-actions .quote-withdraw-button{background:#fff;border:1px solid #c7cbc5;color:#5b625d;padding:8px 12px;border-radius:6px;font-size:12px}
+.quote-actions .quote-withdraw-button:hover:not(:disabled){background:#f7f2f0;border-color:#b6a19a;color:#7c4031}
