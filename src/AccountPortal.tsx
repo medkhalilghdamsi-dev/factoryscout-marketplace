@@ -50,7 +50,7 @@ export default function AccountPortal() {
     else setSupplier(s.data as SupplierAccount|null);
     if (!saved.error) setSavedManufacturers(saved.data || []);
     if (p.data?.account_type === "buyer") {
-      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});
+      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,manufacturers(name),unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});
       if (!error) setBuyerRfqs(data || []);
     }
     if (s.data?.status === "approved" && s.data?.manufacturer_id) {
@@ -275,7 +275,7 @@ export default function AccountPortal() {
             <h3>Saved manufacturers ({savedManufacturers.length})</h3>
             {savedManufacturers.length===0 ? <p className="account-copy">Your saved suppliers will appear here. Browse the directory and tap the heart on a factory profile to keep it in your shortlist.</p> : savedManufacturers.map(row=><div className="saved-manufacturer-row" key={row.manufacturer_id}><div><b>{row.manufacturers?.name || row.manufacturer_id}</b><span>{row.manufacturers?.region || "FactoryScout supplier"}</span></div><button disabled={busy} onClick={()=>removeSavedManufacturer(row.manufacturer_id)}>Remove</button></div>)}
             <h3>My requests for quotation ({buyerRfqs.length})</h3>
-            {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}>{q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}</div></div>)}
+            {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}><b>{q.manufacturers?.name || q.manufacturer_id}</b> · {q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}</div></div>)}
           </div>}
           {user && profile?.role!=="admin" && <MessagingPanel userId={user.id} accountType={profile.account_type} />}
           <button className="account-switch" onClick={signOut}>Sign out</button>
