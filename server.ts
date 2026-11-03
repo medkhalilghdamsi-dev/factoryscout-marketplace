@@ -47,7 +47,8 @@ async function supabase(table: string, options: { method?: string; query?: strin
     console.error(`Supabase ${table} request failed:`, response.status, detail.slice(0, 500));
     throw new Error("Database request failed");
   }
-  return response.status === 204 ? null : response.json();
+  const raw = await response.text();
+  return raw ? JSON.parse(raw) : null;
 }
 function textField(value: unknown, max: number) {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= max;
@@ -97,13 +98,13 @@ app.post("/api/rfqs", rateLimit, async (req, res) => {
   if (honeypot) return res.status(201).json({ ok: true });
   const ids = Array.isArray(manufacturerIds) ? [...new Set(manufacturerIds.filter((v: unknown) => typeof v === "string" && v.length > 0 && v.length <= 100))] : [];
   const qty = typeof quantity === "number" ? quantity : Number(quantity);
-  if (!textField(name,120) || !textField(email,254) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) ||
+  if (!textField(name,120) || !textField(email,254) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
       !textField(productType,160) || !Number.isInteger(qty) || qty < 1 || qty > 10000000 || !textField(deliveryCountry,100) ||
       !optionalText(company,160) || !optionalText(targetPrice,120) || !optionalText(materialSpecs,3000) ||
       typeof sampleRequired !== "boolean" || !optionalText(targetDate,10) || ids.length < 1 || ids.length > 5) {
     return res.status(400).json({ error: "Check your contact details, quantity, delivery country and choose 1–5 suppliers." });
   }
-  if (targetDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(targetDate)) return res.status(400).json({ error: "Please use a valid target date." });
+  if (targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) return res.status(400).json({ error: "Please use a valid target date." });
   if (!databaseReady) return res.status(503).json({ error: "The RFQ service is not configured yet. Your details have not been stored." });
   try {
     for (const id of ids) {
