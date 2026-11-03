@@ -56,7 +56,7 @@ export default function AccountPortal() {
       if (!error) setBuyerRfqs(data || []);
     }
     if (s.data?.status === "approved" && s.data?.manufacturer_id) {
-      const {data,error} = await supabase.from("rfqs").select("*,undefined").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});
+      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets!inner(manufacturer_id),rfq_quote_decisions(manufacturer_id,status)").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});
       if (!error) setSupplierRfqs(data || []);
     }
   };
