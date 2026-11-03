@@ -95,3 +95,31 @@ test("shareable product detail pages show specifications and prefill a product R
   await expect(page.getByLabel("Product type")).toHaveValue("Streetwear");
   await expect(page.locator(".rfq-suppliers input[type='checkbox']").first()).toBeChecked();
 });
+
+test("global search finds published products by material", async ({ page }) => {
+  const product = {
+    id: "test-heavyweight-hoodie",
+    manufacturer_id: "les-ateliers-bs",
+    name: "Heavyweight Hoodie",
+    product_type: "Streetwear",
+    description: "A supplier-listed heavyweight cotton hoodie.",
+    materials: ["Organic cotton", "Recycled polyester"],
+    techniques: ["Embroidery"],
+    minimum_order: 100,
+    sample_available: true,
+    lead_time_days: 45,
+    image_url: null,
+    evidence: "Supplier-submitted",
+    manufacturers: { name: "Les Ateliers BS", region: "La Soukra, Ariana" }
+  };
+  await page.route("**/api/products", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([product])
+  }));
+  await page.goto("/");
+  await page.locator("#global-market-search").fill("organic cotton");
+  await page.locator(".marketplace-global-search button").click();
+  await expect(page.locator("#catalog")).toBeInViewport();
+  await expect(page.locator(".product-card h3")).toHaveText("Heavyweight Hoodie");
+});
