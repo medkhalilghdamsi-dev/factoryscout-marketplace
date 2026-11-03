@@ -1,0 +1,34 @@
+create unique index if not exists rfq_conversations_rfq_manufacturer_unique
+  on public.rfq_conversations(rfq_id,manufacturer_id);
+
+create or replace function public.submit_rfq_for_buyer(
+  p_buyer_name text,p_buyer_email text,p_company text,p_product_type text,p_quantity integer,
+  p_target_price text,p_delivery_country text,p_material_specs text,p_sample_required boolean,
+  p_target_date date,p_manufacturer_ids text[]
+) returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $$
+declare v_id uuid;
+begin
+ if (select auth.uid()) is null then raise exception 'Sign in required'; end if;
+ if coalesce(cardinality(p_manufacturer_ids),0) not between 1 and 5 then raise exception 'Select between one and five suppliers'; end if;
+ if exists (select 1 from unnest(p_manufacturer_ids) x group by x having count(*)>1) then raise exception 'Duplicate suppliers'; end if;
+ if exists (select 1 from unnest(p_manufacturer_ids) x where not exists (select 1 from public.manufacturers m where m.id=x and m.is_published=true)) then raise exception 'Supplier unavailable'; end if;
+ insert into public.rfqs(id,buyer_id,buyer_name,buyer_email,company,product_type,quantity,target_price,delivery_country,material_specs,sample_required,target_date,status)
+ values(gen_random_uuid(),(select auth.uid()),btrim(p_buyer_name),btrim(p_buyer_email),coalesce(btrim(p_company),''),btrim(p_product_type),p_quantity,coalesce(btrim(p_target_price),''),btrim(p_delivery_country),coalesce(btrim(p_material_specs),''),p_sample_required,p_target_date,'new')
+ returning id into v_id;
+ insert into public.rfq_targets(rfq_id,manufacturer_id)
+ select v_id,x from unnest(p_manufacturer_ids) x;
+ insert into public.rfq_conversations(rfq_id,manufacturer_id,buyer_id,supplier_owner_id)
+ select v_id,t.manufacturer_id,(select auth.uid()),sa.owner_id
+ from public.rfq_targets t
+ join public.supplier_accounts sa on sa.manufacturer_id=t.manufacturer_id and sa.status='approved'
+ where t.rfq_id=v_id
+ on conflict (rfq_id,manufacturer_id) do nothing;
+ return v_id;
+end;
+$$;
+revoke all on function public.submit_rfq_for_buyer(text,text,text,text,integer,text,text,text,boolean,date,text[]) from public,anon;
+grant execute on function public.submit_rfq_for_buyer(text,text,text,text,integer,text,text,text,boolean,date,text[]) to authenticated;

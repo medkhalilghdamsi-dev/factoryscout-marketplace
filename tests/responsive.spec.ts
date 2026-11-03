@@ -55,3 +55,26 @@ test("supplier storefront is directly reachable on mobile without horizontal ove
   expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(391);
   await page.screenshot({ path: "test-results/screenshots/storefront-390.png", fullPage: true });
 });
+
+
+test("product sourcing basket opens with an honest empty state", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: /products in sourcing basket/i }).click();
+  await expect(page.getByRole("heading", { name: /Product sourcing basket/i })).toBeVisible();
+  await expect(page.getByText(/Your basket is empty/i)).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth
+  }));
+  expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(391);
+  expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(391);
+});
+
+test("unknown product route displays a clear unavailable state", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/products/not-a-real-product");
+  await expect(page.getByRole("heading", { name: /This product page isn't available/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Explore products/i })).toBeVisible();
+});

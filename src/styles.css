@@ -713,3 +713,67 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
  .marketplace-category-nav>a:first-child,.marketplace-category-nav>a:nth-child(2),.marketplace-category-nav>a:nth-child(3){margin-left:0;color:#f0f3ec;font-weight:600}
  .marketplace-category-nav>span{margin-left:clamp(8px,1.2vw,18px);padding-left:clamp(8px,1.2vw,18px);border-left:1px solid #ffffff30}
 }
+
+
+/* Complete marketplace upgrade: product detail and multi-supplier sourcing basket */
+.product-detail-page{min-height:100vh;background:#f6f7f2}
+.product-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);max-width:1240px;margin:0 auto;padding:64px 5% 90px;align-items:start}
+.product-detail-image{min-height:520px;background:#e9ece5;display:grid;place-items:center;overflow:hidden;border:1px solid #dfe4da}
+.product-detail-image img{width:100%;height:100%;min-height:520px;object-fit:cover}
+.product-detail-image span{font-size:10px;letter-spacing:1.5px;color:#68756b}
+.product-detail-copy h1{font-size:clamp(38px,5vw,58px);letter-spacing:-2.5px;line-height:1.02;margin:18px 0}
+.product-detail-copy>p{line-height:1.8;color:#536158;font-size:14px}
+.product-detail-type{font-weight:700;color:#26372c!important}
+.product-detail-evidence{display:inline-block;margin-top:18px;font-size:10px;color:#667568}
+.product-detail-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:28px 0}
+.product-detail-facts>div{padding:15px;background:#fff;border:1px solid #e0e5dc;display:grid;gap:9px}
+.product-detail-facts small{font-size:8px;letter-spacing:1px;color:#788478}
+.product-detail-facts b{font-size:12px;line-height:1.5}
+.product-detail-copy h3{font-size:12px;margin:24px 0 10px}
+.product-detail-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.product-card-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:14px}
+.basket-modal{max-width:760px;width:min(760px,calc(100% - 32px))}
+.basket-row{display:grid;grid-template-columns:minmax(0,1fr) 110px auto;gap:14px;align-items:center;padding:16px 0;border-bottom:1px solid #e2e6de}
+.basket-row>div{display:grid;gap:5px}
+.basket-row b{font-size:13px}
+.basket-row span,.basket-row small{font-size:10px;color:#6c796f}
+.basket-row label{font-size:9px;color:#6c796f}
+.basket-row input{width:100%;box-sizing:border-box;padding:9px;border:1px solid #d9dfd6}
+.basket-row button{border:0;background:none;color:#8a4d40;font-size:10px;cursor:pointer}
+.product-detail-page .storefront-nav{position:sticky;top:0;z-index:30}
+@media(max-width:760px){
+ .product-detail{grid-template-columns:minmax(0,1fr);padding:28px 18px 60px;gap:28px}
+ .product-detail-image,.product-detail-image img{min-height:300px;height:300px}
+ .product-detail-facts{grid-template-columns:minmax(0,1fr)}
+ .basket-row{grid-template-columns:minmax(0,1fr) 80px;gap:10px}
+ .basket-row button{grid-column:1/-1;justify-self:start}
+ .product-detail-actions{display:grid}
+ .product-detail-actions .button{width:100%}
+}
+
+
+/* Private RFQ messaging centre */
+.message-centre{margin-top:30px;padding-top:24px;border-top:1px solid #e1e6dd}
+.message-centre-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.message-centre-heading h3{margin:0}
+.message-centre-heading>span,.message-thread-title span{font-size:10px;color:#718075}
+.message-centre-layout{display:grid;grid-template-columns:minmax(150px,.72fr) minmax(0,1.5fr);gap:12px;margin-top:15px;min-height:340px}
+.message-thread-list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}
+.message-thread{position:relative;display:grid;gap:5px;text-align:left;padding:12px;border:1px solid #e0e5dc;background:#fff;color:#26372c;cursor:pointer}
+.message-thread.active{border-color:#526d59;background:#f3f6ef}
+.message-thread b{font-size:11px;overflow-wrap:anywhere}
+.message-thread span,.message-thread small{font-size:9px;color:#738075}
+.message-thread em{position:absolute;right:8px;top:8px;padding:3px 6px;background:#dbe6a0;color:#26372c;border-radius:12px;font-size:8px;font-style:normal}
+.message-thread-panel{display:flex;flex-direction:column;min-width:0;border:1px solid #e0e5dc;background:#fafbf8}
+.message-thread-title{display:grid;gap:4px;padding:12px 14px;border-bottom:1px solid #e3e7df}
+.message-thread-title b{font-size:12px}
+.message-history{display:flex;flex:1;flex-direction:column;gap:9px;min-height:190px;max-height:300px;overflow:auto;padding:13px}
+.message-bubble{align-self:flex-start;max-width:86%;padding:10px 12px;background:#edf0e9;border-radius:3px}
+.message-bubble.own{align-self:flex-end;background:#263c30;color:#fff}
+.message-bubble p{margin:0;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.message-bubble small{display:block;margin-top:6px;font-size:8px;opacity:.7}
+.message-composer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px;border-top:1px solid #e3e7df}
+.message-composer textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid #d9dfd6;padding:10px;font:inherit;font-size:11px;resize:vertical}
+.message-composer button{align-self:end;min-height:40px;padding:0 13px;border:0;background:#263c30;color:#fff;font-size:10px;font-weight:700;cursor:pointer}
+.message-composer button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:640px){.message-centre-layout{grid-template-columns:minmax(0,1fr)}.message-thread-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:170px}.message-thread{padding:10px}.message-history{max-height:260px}.message-composer{grid-template-columns:minmax(0,1fr)}.message-composer button{justify-self:end}}
