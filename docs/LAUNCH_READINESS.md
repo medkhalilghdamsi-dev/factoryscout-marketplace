@@ -60,7 +60,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Product create/edit/archive, image upload/replacement/deletion and moderation.
 - [ ] Supplier sees only RFQs assigned to its manufacturer account.
 - [x] Supplier can submit, update and withdraw quotations; buyer sees current status and values (database-backed controls; E2E pending).
-- [ ] Quotation validity dates, expiry handling and automatic buyer/supplier notifications.
+- [x] Suppliers can set quotation validity dates; buyers see expiry and cannot select an expired quotation (RPC guard added).
+- [ ] Automatic buyer/supplier expiry notifications and quote renewal reminders.
 - [x] Supplier sees buyer quote-selection decisions and selected quotations are locked against supplier edits (database policy verified).
 - [ ] Supplier can respond in private conversation without seeing another supplier's quotes or buyer data beyond what is required.
 
