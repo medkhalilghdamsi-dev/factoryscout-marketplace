@@ -616,6 +616,27 @@ grant execute on function public.select_rfq_quote(uuid,text) to authenticated;
 
 -- Include evidence URL and reviewer note in manufacturer audit history.
 -- Preserve evidence source and reviewer notes in manufacturer verification audit events.
+create table if not exists public.admin_review_events (
+ id uuid primary key default gen_random_uuid(),
+ entity_type text not null,
+ entity_id text not null,
+ action text not null,
+ actor_id uuid references auth.users(id) on delete set null,
+ previous_state jsonb not null default '{}'::jsonb,
+ new_state jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now(),
+ constraint admin_review_events_entity_type_check check(entity_type in ('supplier_account','product','manufacturer','buyer_enquiry','rfq'))
+);
+alter table public.admin_review_events drop constraint if exists admin_review_events_entity_type_check;
+alter table public.admin_review_events add constraint admin_review_events_entity_type_check check(entity_type in ('supplier_account','product','manufacturer','buyer_enquiry','rfq'));
+create index if not exists admin_review_events_entity_idx on public.admin_review_events(entity_type,entity_id,created_at desc);
+create index if not exists admin_review_events_actor_idx on public.admin_review_events(actor_id,created_at desc);
+alter table public.admin_review_events enable row level security;
+revoke all on public.admin_review_events from anon,authenticated;
+grant select on public.admin_review_events to authenticated;
+drop policy if exists "Admins can read review audit events" on public.admin_review_events;
+create policy "Admins can read review audit events" on public.admin_review_events for select to authenticated using ((select private.is_factoryscout_admin()));
+
 create or replace function private.audit_factoryscout_review_event()
 returns trigger
 language plpgsql
@@ -676,6 +697,13 @@ begin
 end;
 $$;
 revoke all on function private.audit_factoryscout_review_event() from public,anon,authenticated;
+drop trigger if exists audit_supplier_account_review on public.supplier_accounts;
+create trigger audit_supplier_account_review after update on public.supplier_accounts for each row execute function private.audit_factoryscout_review_event();
+drop trigger if exists audit_product_moderation on public.products;
+create trigger audit_product_moderation after update on public.products for each row execute function private.audit_factoryscout_review_event();
+drop trigger if exists audit_manufacturer_verification on public.manufacturers;
+create trigger audit_manufacturer_verification after update on public.manufacturers for each row execute function private.audit_factoryscout_review_event();
+
 drop trigger if exists audit_enquiry_status on public.enquiries;
 create trigger audit_enquiry_status after update of status on public.enquiries for each row execute function private.audit_factoryscout_review_event();
 drop trigger if exists audit_rfq_status on public.rfqs;
