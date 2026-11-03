@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
-import { createClient, type Session, type User } from "@supabase/supabase-js";
+import { type Session, type User } from "@supabase/supabase-js";
+import { supabase } from "./supabaseClient";
+import MessagingPanel from "./MessagingPanel";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-export const supabase = supabaseUrl && publishableKey ? createClient(supabaseUrl, publishableKey, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-}) : null;
 
 type Profile = { id:string; email:string|null; full_name:string; account_type:"buyer"|"supplier"; role:"user"|"admin" };
 type SupplierAccount = { id:string; owner_id:string; manufacturer_id:string|null; company_name:string; slug:string; website:string|null; location:string; about:string; status:"pending"|"approved"|"rejected" };
@@ -280,6 +277,7 @@ export default function AccountPortal() {
             <h3>My requests for quotation ({buyerRfqs.length})</h3>
             {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}>{q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}</div></div>)}
           </div>}
+          {user && profile?.role!=="admin" && <MessagingPanel userId={user.id} accountType={profile.account_type} />}
           <button className="account-switch" onClick={signOut}>Sign out</button>
         </>}
         {message && <p className="account-message" role="status">{message}</p>}
