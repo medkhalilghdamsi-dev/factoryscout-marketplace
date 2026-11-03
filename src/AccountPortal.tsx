@@ -275,7 +275,20 @@ export default function AccountPortal() {
             <h3>Saved manufacturers ({savedManufacturers.length})</h3>
             {savedManufacturers.length===0 ? <p className="account-copy">Your saved suppliers will appear here. Browse the directory and tap the heart on a factory profile to keep it in your shortlist.</p> : savedManufacturers.map(row=><div className="saved-manufacturer-row" key={row.manufacturer_id}><div><b>{row.manufacturers?.name || row.manufacturer_id}</b><span>{row.manufacturers?.region || "FactoryScout supplier"}</span></div><button disabled={busy} onClick={()=>removeSavedManufacturer(row.manufacturer_id)}>Remove</button></div>)}
             <h3>My requests for quotation ({buyerRfqs.length})</h3>
-            {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}><b>{q.rfq_targets?.manufacturers?.name || q.manufacturer_id}</b> · {q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}</div></div>)}
+            {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).length>0 ? <div className="quote-comparison">
+                <h4>Compare supplier quotations</h4>
+                <div className="quote-comparison-scroll"><table>
+                  <thead><tr><th>Supplier</th><th>Unit price</th><th>MOQ</th><th>Lead time</th><th>Samples</th><th>Status</th></tr></thead>
+                  <tbody>{(r.supplier_quotes||[]).map((q:any)=><tr key={q.id}>
+                    <td><b>{q.rfq_targets?.manufacturers?.name || q.manufacturer_id}</b>{q.notes&&<small>{q.notes}</small>}</td>
+                    <td className="quote-price">{q.currency} {Number(q.unit_price).toFixed(2)}</td>
+                    <td>{q.minimum_order ? Number(q.minimum_order).toLocaleString() : "Not specified"}</td>
+                    <td>{q.lead_time_days ? `${q.lead_time_days} days` : "Not specified"}</td>
+                    <td>{q.sample_available ? "Available" : "Not available"}</td>
+                    <td><span className="quote-status">{q.status}</span></td>
+                  </tr>)}</tbody>
+                </table></div>
+              </div> : <small className="quote-waiting">No quotations received yet. Your selected suppliers can respond from their workspaces.</small>}</div></div>)}
           </div>}
           {user && profile && profile.role!=="admin" && <MessagingPanel userId={user.id} accountType={profile.account_type} />}
           <button className="account-switch" onClick={signOut}>Sign out</button>
