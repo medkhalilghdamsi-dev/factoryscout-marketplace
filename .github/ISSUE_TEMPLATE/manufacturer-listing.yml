@@ -47,12 +47,10 @@ body:
       label: Evidence and certifications
       description: Share links to capability documents, certificates, factory photos or other supporting material. Do not post confidential documents publicly.
   - type: input
-    id: contact
+    id: contact_page
     attributes:
-      label: Business contact email
-      description: This issue is public. Only provide an address intended for business enquiries.
-    validations:
-      required: true
+      label: Public business contact page (optional)
+      description: Link to a public contact page. Do not post personal email addresses or private contact details here.
   - type: checkboxes
     id: consent
     attributes:
