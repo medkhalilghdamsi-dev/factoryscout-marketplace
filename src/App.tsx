@@ -125,9 +125,16 @@ export default function App() {
         </>}
         {products.length === 0 ? (
           <div className="catalog-empty">
-            <span>01 / CATALOGUE</span><h3>Product listings are opening soon.</h3>
-            <p>We are building the catalogue from real supplier submissions. No invented SKUs, stock claims or placeholder products.</p>
-            <button className="button primary" onClick={()=>{setRfq(r=>({...r,manufacturerIds:compareIds.length?compareIds:[]}));setShowRfqForm(true);}}>Describe a product you need ↗</button>
+            <div className="catalog-empty-mark">FS <span>/ 02</span></div>
+            <div className="catalog-empty-copy">
+              <span>REAL SUPPLIER LISTINGS ONLY</span>
+              <h3>The product catalogue is being built with manufacturers.</h3>
+              <p>We only publish products submitted by suppliers and approved for display. Tell us what you need and start a sourcing request while the catalogue grows.</p>
+              <div className="catalog-empty-actions">
+                <button className="button primary" onClick={()=>{setRfq(r=>({...r,manufacturerIds:compareIds.length?compareIds:[]}));setShowRfqForm(true);}}>Describe what you need <span>↗</span></button>
+                <a className="catalog-secondary-link" href="#directory">Explore supplier profiles ↗</a>
+              </div>
+            </div>
           </div>
         ) : (
           <>
