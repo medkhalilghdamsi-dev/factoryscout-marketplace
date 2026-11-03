@@ -138,3 +138,13 @@ footer{padding:32px 7.2%}.profile-modal{border-radius:4px}.form-grid input,.form
 .supplier-review-card strong.approved{color:#426b48}
 .account-panel h3{font-size:16px;margin:22px 0 5px}
 @media(max-width:600px){.account-panel{padding:38px 22px 28px}.account-panel h2{font-size:36px}.account-form-grid{grid-template-columns:1fr}.top-actions{gap:7px}.account-trigger{padding:10px 9px;font-size:10px}}
+
+
+.admin-dashboard h3{margin-top:25px}
+.admin-review-item{display:grid;gap:8px;padding:14px;border:1px solid #e2e0d8;background:#fff;margin:10px 0}
+.admin-review-item>b{font-size:13px}
+.admin-review-item>span{font-size:11px;color:#74786f}
+.admin-review-item>p{font-size:12px;line-height:1.5;color:#5d625b;margin:0}
+.admin-review-item>div{display:flex;gap:8px;flex-wrap:wrap}
+.admin-review-item button{border:1px solid #d9d7d1;background:#f7f6f2;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer}
+.admin-review-item button:first-child{background:#253329;color:white;border-color:#253329}
