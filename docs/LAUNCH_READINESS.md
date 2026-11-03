@@ -123,7 +123,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Unit/integration tests for API and database RPCs; authenticated RFQ/quote/message journeys still need test identities.
 - [ ] E2E tests for buyer, supplier and admin journeys.
 - [x] Responsive browser tests across eight mobile/tablet/desktop viewports; product detail, storefront-to-product navigation, global material search and product-specific RFQ handoff are covered.
-- [ ] API security-header and public-form rate-limit regression tests added; awaiting CI confirmation.
+- [x] API security-header and public-form rate-limit regression tests passed in GitHub Actions.
 - [ ] Accessibility audit and browser/device compatibility.
 - [ ] Test empty, error, slow-network, expired-session, duplicate-submit and malicious-input cases.
 - [ ] Production smoke test after deployment; verify database-backed reads and writes.
