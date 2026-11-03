@@ -274,7 +274,7 @@ export default function AccountPortal() {
       unit_price:Number(draft.unit_price), currency:draft.currency,
       minimum_order:draft.minimum_order?Number(draft.minimum_order):null,
       lead_time_days:draft.lead_time_days?Number(draft.lead_time_days):null,
-      sample_available:draft.sample_available, notes:draft.notes.trim(), valid_until:draft.valid_until||null, status:supplierRfqs.find(r=>r.id===rfqId)?.supplier_quotes?.some((q:any)=>q.manufacturer_id===manufacturerId)?"updated":"submitted", updated_at:new Date().toISOString()
+      sample_available:draft.sample_available, notes:draft.notes.trim(), valid_until:draft.valid_until||null, status:getRfqQuotes(supplierRfqs.find(r=>r.id===rfqId)||{}).some((q:any)=>q.manufacturer_id===manufacturerId)?"updated":"submitted", updated_at:new Date().toISOString()
     },{onConflict:"rfq_id,manufacturer_id"});
     if (error) setMessage("Quote could not be submitted: "+error.message);
     else { setMessage("Your quotation has been sent to the buyer."); await loadAccount(user); }
