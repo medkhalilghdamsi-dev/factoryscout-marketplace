@@ -118,7 +118,7 @@ create or replace function public.submit_rfq(
  p_material_specs text, p_sample_required boolean, p_target_date date,
  p_manufacturer_ids text[]
 ) returns void
-language plpgsql security definer set search_path = ''
+language plpgsql security invoker set search_path = ''
 as $$
 declare v_rfq_id uuid; v_target_count integer;
 begin
@@ -155,4 +155,5 @@ end;
 $$;
 revoke all on function public.submit_rfq(text,text,text,text,integer,text,text,text,boolean,date,text[]) from public, anon, authenticated;
 grant execute on function public.submit_rfq(text,text,text,text,integer,text,text,text,boolean,date,text[]) to anon;
-revoke insert on public.rfqs, public.rfq_targets from anon, authenticated;
+grant insert on public.rfqs, public.rfq_targets to anon;
+revoke insert on public.rfqs, public.rfq_targets from authenticated;
