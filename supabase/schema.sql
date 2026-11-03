@@ -457,3 +457,37 @@ alter table public.supplier_quotes drop constraint if exists supplier_quotes_not
 alter table public.supplier_quotes add constraint supplier_quotes_notes_check check (char_length(notes) <= 2000);
 alter table public.supplier_quotes drop constraint if exists supplier_quotes_status_check;
 alter table public.supplier_quotes add constraint supplier_quotes_status_check check (status in ('submitted','updated','withdrawn'));
+
+
+-- Private conversations are limited to the buyer and the approved supplier assigned to an RFQ.
+create table if not exists public.rfq_conversations (
+ id uuid primary key default gen_random_uuid(), rfq_id uuid not null, manufacturer_id text not null,
+ buyer_id uuid not null references auth.users(id) on delete cascade,
+ supplier_owner_id uuid not null references auth.users(id) on delete cascade,
+ created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+ foreign key(rfq_id,manufacturer_id) references public.rfq_targets(rfq_id,manufacturer_id) on delete cascade,
+ unique(rfq_id,manufacturer_id), check(buyer_id <> supplier_owner_id)
+);
+create index if not exists rfq_conversations_buyer_idx on public.rfq_conversations(buyer_id,updated_at desc);
+create index if not exists rfq_conversations_supplier_idx on public.rfq_conversations(supplier_owner_id,updated_at desc);
+alter table public.rfq_conversations enable row level security;
+grant select,insert on public.rfq_conversations to authenticated;
+drop policy if exists "RFQ participants can read conversations" on public.rfq_conversations;
+create policy "RFQ participants can read conversations" on public.rfq_conversations for select to authenticated using ((select auth.uid())=buyer_id or (select auth.uid())=supplier_owner_id);
+drop policy if exists "RFQ participants can open conversations" on public.rfq_conversations;
+create policy "RFQ participants can open conversations" on public.rfq_conversations for insert to authenticated with check (
+ ((select auth.uid())=buyer_id and exists(select 1 from public.rfqs r where r.id=rfq_conversations.rfq_id and r.buyer_id=rfq_conversations.buyer_id))
+ or ((select auth.uid())=supplier_owner_id and exists(select 1 from public.rfqs r join public.rfq_targets t on t.rfq_id=r.id join public.supplier_accounts sa on sa.manufacturer_id=t.manufacturer_id where r.id=rfq_conversations.rfq_id and t.manufacturer_id=rfq_conversations.manufacturer_id and r.buyer_id=rfq_conversations.buyer_id and sa.owner_id=rfq_conversations.supplier_owner_id and sa.status='approved'))
+);
+create table if not exists public.rfq_messages (
+ id uuid primary key default gen_random_uuid(), conversation_id uuid not null references public.rfq_conversations(id) on delete cascade,
+ sender_id uuid not null references auth.users(id) on delete cascade, body text not null check(char_length(btrim(body)) between 1 and 4000),
+ created_at timestamptz not null default now(), read_at timestamptz
+);
+create index if not exists rfq_messages_conversation_created_idx on public.rfq_messages(conversation_id,created_at);
+alter table public.rfq_messages enable row level security;
+grant select,insert on public.rfq_messages to authenticated;
+drop policy if exists "Conversation participants can read messages" on public.rfq_messages;
+create policy "Conversation participants can read messages" on public.rfq_messages for select to authenticated using (exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id));
+drop policy if exists "Participants can send messages" on public.rfq_messages;
+create policy "Participants can send messages" on public.rfq_messages for insert to authenticated with check (sender_id=(select auth.uid()) and exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id));
