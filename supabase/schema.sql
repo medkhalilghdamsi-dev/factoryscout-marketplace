@@ -491,3 +491,7 @@ drop policy if exists "Conversation participants can read messages" on public.rf
 create policy "Conversation participants can read messages" on public.rfq_messages for select to authenticated using (exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id));
 drop policy if exists "Participants can send messages" on public.rfq_messages;
 create policy "Participants can send messages" on public.rfq_messages for insert to authenticated with check (sender_id=(select auth.uid()) and exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id));
+
+create index if not exists rfq_messages_sender_idx on public.rfq_messages(sender_id);
+create index if not exists saved_manufacturers_manufacturer_idx on public.saved_manufacturers(manufacturer_id);
+create index if not exists supplier_quotes_supplier_owner_idx on public.supplier_quotes(supplier_owner_id);
