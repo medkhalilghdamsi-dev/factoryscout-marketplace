@@ -167,3 +167,8 @@ footer{padding:32px 7.2%}.profile-modal{border-radius:4px}.form-grid input,.form
 .saved-manufacturer-row b{font-size:13px;color:#222}
 .saved-manufacturer-row span{font-size:11px;color:#777}
 .saved-manufacturer-row button{border:0;background:transparent;color:#8b4d3d;font:inherit;font-size:11px;cursor:pointer}
+
+
+/* RFQ-linked private messaging */
+.message-thread{border:1px solid #e4e1d9;background:#fff;padding:14px;margin:12px 0}.message-thread-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:12px}.message-thread-heading small,.message-bubble small{color:#777;font-size:10px}.message-history{display:grid;gap:8px;padding:12px 0}.message-bubble{max-width:88%;padding:10px 12px;background:#f2f1ec;border-radius:3px}.message-bubble.own{justify-self:end;background:#e8eee6}.message-bubble p{font-size:12px;line-height:1.5;margin:0 0 5px;white-space:pre-wrap;overflow-wrap:anywhere}.message-bubble small{display:block}.message-compose{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.message-compose textarea{width:100%;box-sizing:border-box;border:1px solid #deded7;padding:10px;font:inherit;font-size:12px;resize:vertical}.message-compose button,.message-thread button{border:1px solid #253329;background:#253329;color:#fff;padding:10px 13px;font-size:11px;cursor:pointer}.message-thread button{margin:8px 8px 0 0}.message-compose button:disabled,.message-thread button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:480px){.message-compose{grid-template-columns:1fr}.message-compose button{justify-self:start}}
