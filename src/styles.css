@@ -29,3 +29,39 @@ footer{padding:32px 7.2%}.profile-modal{border-radius:4px}.form-grid input,.form
 @media(max-width:640px){.topbar{padding-inline:5%}.hero{padding:58px 5% 0}.hero h1{font-size:58px;letter-spacing:-3.7px}.hero-text{font-size:13px}.visual-image{height:340px}.floating-card{left:-5px;min-width:260px}.section{padding:74px 5%}.section h2{letter-spacing:-2.4px}.card-art{height:170px}.how{padding-block:76px}.steps{margin-top:38px}.list-cta{padding:58px 6%}.list-cta h2{font-size:43px}footer{padding-inline:5%}}
 
 .honeypot{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}.privacy-note a{text-decoration:underline;color:#536546}
+
+/* Marketplace discovery and shortlist controls */
+.category-shortcuts{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:24px}
+.category-shortcuts>span{font-size:8px;letter-spacing:1.2px;color:#879187;margin-right:5px}
+.category-shortcuts button{border:1px solid #dfe4d9;background:transparent;color:#627064;padding:8px 12px;font-size:9px;cursor:pointer;border-radius:2px}
+.category-shortcuts button:hover,.category-shortcuts button.active{background:#17251e;color:#e0e98d;border-color:#17251e}
+.results-line small{font-size:8px;color:#9aa399}
+.sort-control{display:flex;align-items:center;gap:9px;font-size:8px;letter-spacing:1px;color:#89938a}
+.sort-control select{border:0;background:transparent;color:#344238;font-size:10px;outline:0;cursor:pointer}
+.card-actions{display:flex;align-items:center;justify-content:space-between;margin:-4px 0 13px}
+.compare-check{display:flex;align-items:center;gap:6px;font-size:9px;color:#667267;cursor:pointer}
+.compare-check input{accent-color:#71834c}
+.compare-check input:disabled{cursor:not-allowed}
+.save-button{border:0;background:transparent;color:#7e897f;font-size:20px;line-height:1;cursor:pointer}
+.save-button.saved{color:#a34e45}
+.compare-tray{position:fixed;z-index:8;bottom:18px;left:50%;transform:translateX(-50%);width:min(720px,calc(100% - 30px));background:#17251e;color:white;box-shadow:0 12px 45px #0004;padding:14px 17px;display:flex;align-items:center;gap:16px;border:1px solid #ffffff20}
+.compare-tray>div{display:grid;gap:4px;flex:1}.compare-tray b{font-size:11px}.compare-tray span{font-size:9px;color:#b3beb4}
+.compare-open{border:0;background:#dce77c;color:#17251e;padding:11px 14px;font-size:10px;font-weight:700;cursor:pointer}
+.compare-open:disabled{opacity:.45;cursor:not-allowed}
+.compare-clear{border:0;background:transparent;color:#c4cec5;font-size:9px;cursor:pointer}
+.compare-modal{width:min(900px,100%)}
+.compare-table{overflow-x:auto;margin-top:24px;border-top:1px solid #dce1d6}
+.compare-row{display:grid;grid-template-columns:130px repeat(auto-fit,minmax(150px,1fr));border-bottom:1px solid #e1e5dc;min-width:450px}
+.compare-row>*{padding:12px 10px;font-size:10px;line-height:1.6;color:#59675c;overflow-wrap:anywhere}
+.compare-row>*+*{border-left:1px solid #e1e5dc}
+.compare-row>*:first-child{font-weight:700;color:#26352c}
+.compare-head{background:#edf0e7}
+.compare-head b{font-size:10px;color:#243329}
+@media(max-width:640px){
+ .category-shortcuts{gap:6px}.category-shortcuts>span{width:100%}
+ .category-shortcuts button{padding:7px 9px}
+ .results-line{align-items:flex-start}.sort-control{white-space:nowrap}
+ .compare-tray{bottom:8px;padding:11px;gap:8px}.compare-tray span{display:none}
+ .compare-open{padding:10px;font-size:9px}.compare-clear{font-size:8px}
+ .compare-row{grid-template-columns:95px repeat(auto-fit,minmax(125px,1fr))}
+}
