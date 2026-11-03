@@ -43,6 +43,7 @@ export default function AccountPortal() {
     setProfile(null);
     setSupplier(null);
     setSavedManufacturers([]);
+    setConversations([]);
     if (!current || !supabase) return;
     const [p,s,saved] = await Promise.all([
       supabase.from("profiles").select("id,email,full_name,account_type,role").eq("id",current.id).maybeSingle(),
@@ -313,7 +314,7 @@ export default function AccountPortal() {
                 <label>Lead time (days)<input type="number" min="1" max="730" value={draft.lead_time_days} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,lead_time_days:e.target.value}}))}/></label>
                 <label>Notes<textarea rows={2} maxLength={2000} value={draft.notes} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,notes:e.target.value}}))}/></label>
                 <label className="account-checkbox"><input type="checkbox" checked={draft.sample_available} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,sample_available:e.target.checked}}))}/> Samples available</label>
-                <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button><button disabled={busy} onClick={()=>openConversation(r,supplier.manufacturer_id!)}>Open buyer conversation ↗</button>
+                <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button><button disabled={busy||!r.buyer_id} onClick={()=>openConversation(r,supplier.manufacturer_id!)}>{r.buyer_id?"Open buyer conversation ↗":"Buyer must sign in to message"}</button>
               </div></div>;
             })}
           </div>}
