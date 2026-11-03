@@ -123,3 +123,30 @@ test("global search finds published products by material", async ({ page }) => {
   await expect(page.locator("#catalog")).toBeInViewport();
   await expect(page.locator(".product-card h3")).toHaveText("Heavyweight Hoodie");
 });
+
+test("supplier storefront product listings open their product detail page", async ({ page }) => {
+  const product = {
+    id: "test-storefront-product",
+    manufacturer_id: "les-ateliers-bs",
+    name: "Premium Woven Overshirt",
+    product_type: "Premium ready-to-wear",
+    description: "A woven overshirt listing from the supplier.",
+    materials: ["Cotton twill"],
+    techniques: ["Garment dye"],
+    minimum_order: 150,
+    sample_available: true,
+    lead_time_days: 50,
+    image_url: null,
+    evidence: "Supplier-submitted",
+    manufacturers: { name: "Les Ateliers BS", region: "La Soukra, Ariana" }
+  };
+  await page.route("**/api/products", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([product])
+  }));
+  await page.goto("/suppliers/les-ateliers-bs");
+  await page.getByRole("button", { name: /View product details/ }).click();
+  await expect(page).toHaveURL(/\/products\/test-storefront-product$/);
+  await expect(page.getByRole("heading", { name: "Premium Woven Overshirt" })).toBeVisible();
+});
