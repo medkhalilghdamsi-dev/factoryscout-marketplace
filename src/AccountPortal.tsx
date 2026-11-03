@@ -147,7 +147,7 @@ export default function AccountPortal() {
             </form>
           </>}
           {profile?.account_type==="supplier" && supplier && <>
-            <div className="supplier-review-card"><b>{supplier.company_name}</b><span>Storefront: /factory/{supplier.slug}</span><strong className={supplier.status==="approved"?"approved":""}>{supplier.status==="approved"?"Approved supplier":supplier.status==="rejected"?"Application needs changes":"Awaiting FactoryScout review"}</strong></div>
+            <div className="supplier-review-card"><b>{supplier.company_name}</b><span>Storefront handle: {supplier.slug}</span><strong className={supplier.status==="approved"?"approved":""}>{supplier.status==="approved"?"Approved supplier":supplier.status==="rejected"?"Application needs changes":"Awaiting FactoryScout review"}</strong></div>
             {supplier.status==="approved" && supplier.manufacturer_id ? <>
               <h3>Submit a product listing</h3>
               <form className="account-form" onSubmit={submitProduct}>
