@@ -12,6 +12,10 @@ services:
       - key: NODE_ENV
         value: production
       - key: SUPABASE_URL
+        value: https://mkirmvrzwldilbdjbgyv.supabase.co
+      - key: SUPABASE_ANON_KEY
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
+      - key: VITE_SUPABASE_URL
+        value: https://mkirmvrzwldilbdjbgyv.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_c0dyfTjaK-mvf9Uwp2jDkw_t2kNAt4Y

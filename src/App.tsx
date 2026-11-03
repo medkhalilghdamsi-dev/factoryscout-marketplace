@@ -8,7 +8,7 @@ type Manufacturer = {
 };
 type Enquiry = { manufacturerId: string; name: string; email: string; company: string; product: string; quantity: string; details: string };
 type SupplierApplication = { company: string; website: string; location: string; products: string; moq: string; leadTime: string; evidence: string; contactPage: string; contactName: string; honeypot: string };
-type Product = { id: string; manufacturer_id: string; name: string; product_type: string; description: string; materials: string[]; techniques: string[]; minimum_order: number | null; sample_available: boolean; lead_time_days: number | null; image_url?: string | null; evidence: string };
+type Product = { id: string; manufacturer_id: string; name: string; product_type: string; description: string; materials: string[]; techniques: string[]; minimum_order: number | null; sample_available: boolean; lead_time_days: number | null; image_url?: string | null; evidence: string; manufacturers?: { name?: string; region?: string } | null };
 type RFQ = { name: string; email: string; company: string; productType: string; quantity: string; targetPrice: string; deliveryCountry: string; materialSpecs: string; sampleRequired: boolean; targetDate: string; manufacturerIds: string[]; honeypot: string };
 
 const seed: Manufacturer[] = [
@@ -30,6 +30,7 @@ export default function App() {
   const [showSupplierForm,setShowSupplierForm] = useState(false); const [showRfqForm,setShowRfqForm] = useState(false); const [rfqNotice,setRfqNotice] = useState("");
   const [rfq,setRfq] = useState<RFQ>({name:"",email:"",company:"",productType:"",quantity:"",targetPrice:"",deliveryCountry:"",materialSpecs:"",sampleRequired:false,targetDate:"",manufacturerIds:[],honeypot:""});
   const [compareIds,setCompareIds] = useState<string[]>([]); const [savedIds,setSavedIds] = useState<string[]>([]); const [sortBy,setSortBy] = useState("recommended"); const [showCompare,setShowCompare] = useState(false);
+  const [productQuery,setProductQuery] = useState(""); const [productCategory,setProductCategory] = useState("All products"); const [productSort,setProductSort] = useState("newest"); const [samplesOnly,setSamplesOnly] = useState(false);
   const [supplierForm,setSupplierForm] = useState<SupplierApplication>({company:"",website:"",location:"",products:"",moq:"",leadTime:"",evidence:"",contactPage:"",contactName:"",honeypot:""});
   const [form,setForm] = useState<Enquiry>({manufacturerId:"",name:"",email:"",company:"",product:"",quantity:"",details:""});
   useEffect(()=>{fetch("/api/manufacturers").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d)&&d.length)setItems(d)}).catch(()=>{});fetch("/api/products").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d))setProducts(d)}).catch(()=>{});},[]);
@@ -38,6 +39,11 @@ export default function App() {
     return text.includes(query.toLowerCase()) && (category===categories[0] || m.category.some(c=>c.toLowerCase().includes(category.toLowerCase())) || m.capabilities.some(c=>c.toLowerCase().includes(category.toLowerCase()))) && regionMatch(m.region,region);
   }),[items,query,category,region]);
   const sortedFiltered = useMemo(()=>[...filtered].sort((a,b)=>sortBy==="name" ? a.name.localeCompare(b.name) : sortBy==="location" ? a.region.localeCompare(b.region) : 0),[filtered,sortBy]);
+  const productCategories = useMemo(()=>["All products",...Array.from(new Set(products.map(p=>p.product_type).filter(Boolean))).sort()], [products]);
+  const visibleProducts = useMemo(()=>products.filter(p=>{
+    const haystack=[p.name,p.product_type,p.description,p.evidence,p.manufacturers?.name,p.manufacturers?.region,...(p.materials||[]),...(p.techniques||[])].join(" ").toLowerCase();
+    return haystack.includes(productQuery.trim().toLowerCase()) && (productCategory==="All products" || p.product_type===productCategory) && (!samplesOnly || p.sample_available);
+  }).sort((a,b)=>productSort==="name"?a.name.localeCompare(b.name):productSort==="moq"?(a.minimum_order??Number.MAX_SAFE_INTEGER)-(b.minimum_order??Number.MAX_SAFE_INTEGER):0),[products,productQuery,productCategory,productSort,samplesOnly]);
   const toggleCompare=(id:string)=>setCompareIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):ids.length<3?[...ids,id]:ids);
   const toggleSaved=(id:string)=>setSavedIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]);
   const openEnquiry=(m:Manufacturer)=>{setSelected(m);setForm(f=>({...f,manufacturerId:m.id}));setShowForm(true);};
@@ -56,7 +62,53 @@ export default function App() {
         {filtered.length===0&&<div className="empty"><span>⌕</span><h3>No matching manufacturers yet.</h3><p>Try another search or reset your filters.</p></div>}
         <div className="directory-foot"><span>MORE MANUFACTURERS ARE BEING RESEARCHED.</span><a href="#list">Are you a manufacturer? Get listed ↗</a></div>
       </section>
-      <section className="catalog section" id="catalog"><div className="section-head"><div><div className="eyebrow dark">THE PRODUCT CATALOGUE <span className="line"/></div><h2>Source by<br/><em>what you make.</em></h2></div><p className="section-intro">Browse factory-published product listings with materials, techniques, sample availability and minimum orders. Listings appear here only after they are added and approved.</p></div>{products.length===0?<div className="catalog-empty"><span>01 / CATALOGUE</span><h3>Product listings are opening soon.</h3><p>We are building the catalogue from real supplier submissions. No invented SKUs, stock claims or placeholder products.</p><button className="button primary" onClick={()=>{setRfq(r=>({...r,manufacturerIds:compareIds.length?compareIds:[]}));setShowRfqForm(true);}}>Describe a product you need ↗</button></div>:<div className="product-grid">{products.map(p=><article className="product-card" key={p.id}><div className="product-image">{p.image_url?<img src={p.image_url} alt={p.name}/>:<span>FACTORYSCOUT / PRODUCT</span>}</div><div className="product-info"><small>{p.product_type} · {p.evidence}</small><h3>{p.name}</h3><p>{p.description}</p><div className="tag-list">{[...p.materials,...p.techniques].slice(0,5).map(t=><span key={t}>{t}</span>)}</div><div className="product-facts"><span>MOQ <b>{p.minimum_order?`${p.minimum_order} pcs`:"Ask supplier"}</b></span><span>Sample <b>{p.sample_available?"Available":"Confirm"}</b></span><span>Lead time <b>{p.lead_time_days?`${p.lead_time_days} days`:"Confirm"}</b></span></div><button className="text-button" onClick={()=>{setRfq(r=>({...r,productType:p.product_type,manufacturerIds:[p.manufacturer_id]}));setShowRfqForm(true);}}>Request this product ↗</button></div></article>)}</div>}</section>
+      <section className="catalog section" id="catalog">
+        <div className="section-head">
+          <div><div className="eyebrow dark">THE PRODUCT CATALOGUE <span className="line"/></div><h2>Source by<br/><em>what you make.</em></h2></div>
+          <p className="section-intro">Browse factory-published product listings with materials, techniques, sample availability and minimum orders. Listings appear here only after they are added and approved.</p>
+        </div>
+        {products.length > 0 && <>
+          <div className="catalog-tools">
+            <input className="catalog-search" value={productQuery} onChange={e=>setProductQuery(e.target.value)} placeholder="Search products, materials, techniques or suppliers…"/>
+            <select value={productCategory} onChange={e=>setProductCategory(e.target.value)}>{productCategories.map(category=><option key={category}>{category}</option>)}</select>
+            <select value={productSort} onChange={e=>setProductSort(e.target.value)}>
+              <option value="newest">Recently added</option><option value="name">Product name</option><option value="moq">Lowest MOQ</option>
+            </select>
+            <label className="sample-filter"><input type="checkbox" checked={samplesOnly} onChange={e=>setSamplesOnly(e.target.checked)}/> Samples available</label>
+          </div>
+          <div className="catalog-results">{visibleProducts.length} approved product listings</div>
+        </>}
+        {products.length === 0 ? (
+          <div className="catalog-empty">
+            <span>01 / CATALOGUE</span><h3>Product listings are opening soon.</h3>
+            <p>We are building the catalogue from real supplier submissions. No invented SKUs, stock claims or placeholder products.</p>
+            <button className="button primary" onClick={()=>{setRfq(r=>({...r,manufacturerIds:compareIds.length?compareIds:[]}));setShowRfqForm(true);}}>Describe a product you need ↗</button>
+          </div>
+        ) : (
+          <>
+            <div className="product-grid">
+              {visibleProducts.map(p=>(
+                <article className="product-card" key={p.id}>
+                  <div className="product-image">{p.image_url?<img src={p.image_url} alt={p.name}/>:<span>FACTORYSCOUT / PRODUCT</span>}</div>
+                  <div className="product-info">
+                    <small>{p.product_type} · {p.evidence}</small><h3>{p.name}</h3>
+                    <div className="product-supplier">{p.manufacturers?.name || "FactoryScout supplier"}{p.manufacturers?.region ? ` · ${p.manufacturers.region}` : ""}</div>
+                    <p>{p.description}</p>
+                    <div className="tag-list">{[...p.materials,...p.techniques].slice(0,5).map(t=><span key={t}>{t}</span>)}</div>
+                    <div className="product-facts">
+                      <span>MOQ <b>{p.minimum_order?`${p.minimum_order} pcs`:"Ask supplier"}</b></span>
+                      <span>Sample <b>{p.sample_available?"Available":"Confirm"}</b></span>
+                      <span>Lead time <b>{p.lead_time_days?`${p.lead_time_days} days`:"Confirm"}</b></span>
+                    </div>
+                    <button className="text-button" onClick={()=>{setRfq(r=>({...r,productType:p.product_type,manufacturerIds:[p.manufacturer_id]}));setShowRfqForm(true);}}>Request this product ↗</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+            {visibleProducts.length===0 && <div className="empty"><span>⌕</span><h3>No matching products.</h3><p>Try a different search or clear the sample and category filters.</p><button className="text-button" onClick={()=>{setProductQuery("");setProductCategory("All products");setSamplesOnly(false);setProductSort("newest");}}>Clear product filters ↺</button></div>}
+          </>
+        )}
+      </section>
       <section className="how section" id="how"><div className="eyebrow">A BETTER WAY TO SOURCE <span className="line"/></div><div className="how-head"><h2>Less guesswork.<br/><em>Better decisions.</em></h2><p>A polished website is not proof of a capable factory. FactoryScout makes the available information easier to compare—and makes missing evidence just as visible.</p></div><div className="steps"><div><span>01</span><div className="step-icon">⌕</div><h3>Discover</h3><p>Search manufacturers by location, product type and production capabilities.</p></div><div><span>02</span><div className="step-icon">▤</div><h3>Compare</h3><p>Review MOQs, lead times and the evidence behind each supplier profile.</p></div><div><span>03</span><div className="step-icon">↗</div><h3>Connect</h3><p>Send a structured enquiry with your product, quantity and requirements.</p></div></div></section>
       <section className="list-cta" id="list"><div><div className="eyebrow">FOR TUNISIAN MANUFACTURERS</div><h2>Put your capabilities<br/>on the <em>map.</em></h2><p>Give international buyers a clearer view of your products, production methods, order sizes and export readiness.</p></div><button className="button light" type="button" onClick={()=>setShowSupplierForm(true)}>Request a listing <span>↗</span></button><div className="cta-stamp">FS<br/>TN</div></section>
     </main>
