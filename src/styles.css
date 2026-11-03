@@ -817,3 +817,6 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
 .supplier-prospect-sources{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
 .supplier-prospect-sources a{color:#3e694d;font-size:11px;text-decoration:underline}
 .supplier-prospect-item select{max-width:240px}
+
+.supplier-prospect-capabilities{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}
+.supplier-prospect-capabilities span{padding:5px 8px;background:#eef1e9;border-radius:4px;color:#586650;font-size:10px}
