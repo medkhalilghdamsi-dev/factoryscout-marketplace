@@ -64,7 +64,7 @@ export default function App() {
     return haystack.includes(productQuery.trim().toLowerCase()) && (productCategory==="All products" || p.product_type===productCategory) && (!samplesOnly || p.sample_available);
   }).sort((a,b)=>productSort==="name"?a.name.localeCompare(b.name):productSort==="moq"?(a.minimum_order??Number.MAX_SAFE_INTEGER)-(b.minimum_order??Number.MAX_SAFE_INTEGER):0),[products,productQuery,productCategory,productSort,samplesOnly]);
   useEffect(()=>{
-    const syncRoute=()=>setStorefrontId(window.location.pathname.match(/^\/suppliers\\/([^/]+)\\/?$/)?.[1] ?? null);
+    const syncRoute=()=>setStorefrontId(window.location.pathname.match(/^\/suppliers\/([^/]+)\/?$/)?.[1] ?? null);
     window.addEventListener("popstate",syncRoute);
     return ()=>window.removeEventListener("popstate",syncRoute);
   },[]);
