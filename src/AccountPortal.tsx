@@ -35,6 +35,12 @@ export default function AccountPortal() {
   const [buyerRfqs,setBuyerRfqs] = useState<any[]>([]);
   const [supplierRfqs,setSupplierRfqs] = useState<any[]>([]);
   const [quoteDrafts,setQuoteDrafts] = useState<Record<string,{unit_price:string;currency:string;minimum_order:string;lead_time_days:string;sample_available:boolean;notes:string}>>({});
+  const [conversations,setConversations] = useState<any[]>([]);
+  const [conversationMessages,setConversationMessages] = useState<any[]>([]);
+  const [activeConversation,setActiveConversation] = useState<string|null>(null);
+  const [messageDraft,setMessageDraft] = useState("");
+  const [unreadCounts,setUnreadCounts] = useState<Record<string,number>>({});
+
 
   const loadAccount = async (current:User|null) => {
     setUser(current);
@@ -52,6 +58,20 @@ export default function AccountPortal() {
     if (s.error && s.error.code !== "PGRST116") setMessage("Supplier workspace could not be loaded.");
     else setSupplier(s.data as SupplierAccount|null);
     if (!saved.error) setSavedManufacturers(saved.data || []);
+    const {data:threads,error:threadError}=await supabase.from("rfq_conversations").select("id,rfq_id,manufacturer_id,buyer_id,supplier_owner_id,updated_at").order("updated_at",{ascending:false});
+    if(!threadError){
+      const rows=threads||[];
+      const ids=Array.from(new Set(rows.map((row:any)=>row.manufacturer_id).filter(Boolean)));
+      const {data:factories}=ids.length?await supabase.from("manufacturers").select("id,name,region").in("id",ids):{data:[]};
+      const names=new Map((factories||[]).map((row:any)=>[row.id,row]));
+      setConversations(rows.map((row:any)=>({...row,manufacturer_name:(names.get(row.manufacturer_id) as any)?.name||row.manufacturer_id,manufacturer_region:(names.get(row.manufacturer_id) as any)?.region||""})));
+      setActiveConversation(current=>current&&rows.some((row:any)=>row.id===current)?current:(rows[0]?.id||null));
+      if(rows.length){
+        const {data:unread}=await supabase.from("rfq_messages").select("conversation_id").in("conversation_id",rows.map((row:any)=>row.id)).neq("sender_id",current.id).is("read_at",null);
+        const counts:Record<string,number>={};(unread||[]).forEach((row:any)=>{counts[row.conversation_id]=(counts[row.conversation_id]||0)+1;});setUnreadCounts(counts);
+      }else setUnreadCounts({});
+    }
+
     if (p.data?.account_type === "buyer") {
       const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});
       if (!error) setBuyerRfqs(data || []);
@@ -71,6 +91,34 @@ export default function AccountPortal() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+
+  useEffect(()=>{
+    if(!supabase||!user||!activeConversation){setConversationMessages([]);return;}
+    let live=true;
+    const loadMessages=async()=>{
+      const {data,error}=await supabase.from("rfq_messages").select("id,conversation_id,sender_id,body,created_at,read_at").eq("conversation_id",activeConversation).order("created_at",{ascending:true});
+      if(error||!live)return;
+      setConversationMessages(data||[]);
+      const unreadIds=(data||[]).filter((row:any)=>row.sender_id!==user.id&&!row.read_at).map((row:any)=>row.id);
+      if(unreadIds.length){
+        const {error:readError}=await supabase.from("rfq_messages").update({read_at:new Date().toISOString()}).in("id",unreadIds);
+        if(!readError)setUnreadCounts(current=>({...current,[activeConversation]:0}));
+      }
+    };
+    void loadMessages();
+    return ()=>{live=false;};
+  },[activeConversation,user?.id]);
+
+  const sendMessage=async(event:React.FormEvent)=>{
+    event.preventDefault();
+    if(!supabase||!user||!activeConversation||!messageDraft.trim())return;
+    setBusy(true);setMessage("");
+    const {error}=await supabase.from("rfq_messages").insert({conversation_id:activeConversation,sender_id:user.id,body:messageDraft.trim()});
+    if(error)setMessage("Message could not be sent: "+error.message);
+    else{setMessageDraft("");const {data}=await supabase.from("rfq_messages").select("id,conversation_id,sender_id,body,created_at,read_at").eq("conversation_id",activeConversation).order("created_at",{ascending:true});setConversationMessages(data||[]);setConversations(rows=>[...rows].sort((a,b)=>a.id===activeConversation?-1:b.id===activeConversation?1:0));}
+    setBusy(false);
+  };
 
   const loadAdminData = async () => {
     if (!supabase) return;
@@ -280,6 +328,18 @@ export default function AccountPortal() {
             <h3>My requests for quotation ({buyerRfqs.length})</h3>
             {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}>{q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}</div></div>)}
           </div>}
+
+          <section className="message-centre">
+            <div className="message-centre-heading"><h3>Messages</h3><span>{conversations.length} RFQ conversations</span></div>
+            {!conversations.length?<p className="account-copy">Your private buyer–supplier conversations will appear here when an RFQ is connected to a factory.</p>:<div className="message-centre-layout">
+              <div className="message-thread-list">{conversations.map(thread=><button type="button" key={thread.id} className={activeConversation===thread.id?"message-thread active":"message-thread"} onClick={()=>setActiveConversation(thread.id)}><b>{thread.manufacturer_name}</b><span>RFQ · {thread.rfq_id.slice(0,8)}</span><small>{thread.manufacturer_region}</small>{(unreadCounts[thread.id]||0)>0&&<em>{unreadCounts[thread.id]} new</em>}</button>)}</div>
+              <div className="message-thread-panel">
+                <div className="message-thread-title"><b>{conversations.find(thread=>thread.id===activeConversation)?.manufacturer_name||"Conversation"}</b><span>Private RFQ discussion</span></div>
+                <div className="message-history">{conversationMessages.map(msg=><div key={msg.id} className={msg.sender_id===user?.id?"message-bubble own":"message-bubble"}><p>{msg.body}</p><small>{new Date(msg.created_at).toLocaleString()}</small></div>)}</div>
+                <form className="message-composer" onSubmit={sendMessage}><textarea rows={2} maxLength={4000} value={messageDraft} onChange={e=>setMessageDraft(e.target.value)} placeholder="Write a message about specifications, samples or delivery…"/><button disabled={busy||!messageDraft.trim()}>Send ↗</button></form>
+              </div>
+            </div>}
+          </section>
           <button className="account-switch" onClick={signOut}>Sign out</button>
         </>}
         {message && <p className="account-message" role="status">{message}</p>}
