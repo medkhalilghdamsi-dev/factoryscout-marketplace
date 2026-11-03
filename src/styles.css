@@ -701,3 +701,15 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
  .topbar>.nav.open{display:flex}
  .directory .cards{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* Prioritize the global search field like a commerce marketplace */
+@media(min-width:1181px){
+ .topbar{grid-template-columns:auto minmax(340px,1fr) auto;grid-template-areas:"brand search actions";gap:clamp(18px,2.5vw,34px)}
+ .topbar>.nav{display:none}
+ .marketplace-global-search{min-width:340px}
+}
+@media(min-width:641px){
+ .marketplace-category-nav>a:first-child,.marketplace-category-nav>a:nth-child(2),.marketplace-category-nav>a:nth-child(3){margin-left:0;color:#f0f3ec;font-weight:600}
+ .marketplace-category-nav>span{margin-left:clamp(8px,1.2vw,18px);padding-left:clamp(8px,1.2vw,18px);border-left:1px solid #ffffff30}
+}
