@@ -693,3 +693,11 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
  .marketplace-category-nav{gap:13px;padding-inline:11px}
  .marketplace-global-search input{font-size:15px}
 }
+
+
+/* Browser QA fixes */
+@media(max-width:1180px){.directory .cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){
+ .topbar>.nav.open{display:flex}
+ .directory .cards{grid-template-columns:minmax(0,1fr)}
+}
