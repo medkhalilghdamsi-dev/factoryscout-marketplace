@@ -56,7 +56,7 @@ export default function AccountPortal() {
       if (!error) setBuyerRfqs(data || []);
     }
     if (s.data?.status === "approved" && s.data?.manufacturer_id) {
-      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets!inner(manufacturer_id),rfq_quote_decisions(manufacturer_id,status)").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});
+      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets!inner(manufacturer_id),rfq_quote_decisions(manufacturer_id,status),supplier_quotes(id,manufacturer_id,unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,updated_at)").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});
       if (!error) setSupplierRfqs(data || []);
     }
   };
@@ -205,10 +205,19 @@ export default function AccountPortal() {
       unit_price:Number(draft.unit_price), currency:draft.currency,
       minimum_order:draft.minimum_order?Number(draft.minimum_order):null,
       lead_time_days:draft.lead_time_days?Number(draft.lead_time_days):null,
-      sample_available:draft.sample_available, notes:draft.notes.trim(), status:"submitted", updated_at:new Date().toISOString()
+      sample_available:draft.sample_available, notes:draft.notes.trim(), status:supplierRfqs.find(r=>r.id===rfqId)?.supplier_quotes?.some((q:any)=>q.manufacturer_id===manufacturerId)?"updated":"submitted", updated_at:new Date().toISOString()
     },{onConflict:"rfq_id,manufacturer_id"});
     if (error) setMessage("Quote could not be submitted: "+error.message);
     else { setMessage("Your quotation has been sent to the buyer."); await loadAccount(user); }
+    setBusy(false);
+  };
+
+  const withdrawQuote = async (rfqId:string, manufacturerId:string) => {
+    if (!supabase || !user) return;
+    setBusy(true); setMessage("");
+    const {error} = await supabase.from("supplier_quotes").update({status:"withdrawn",updated_at:new Date().toISOString()}).eq("rfq_id",rfqId).eq("manufacturer_id",manufacturerId).eq("supplier_owner_id",user.id);
+    if (error) setMessage("Quotation could not be withdrawn: "+error.message);
+    else { setMessage("Your quotation has been withdrawn."); await loadAccount(user); }
     setBusy(false);
   };
 
@@ -270,7 +279,8 @@ export default function AccountPortal() {
           {profile?.role!=="admin" && profile?.account_type==="supplier" && supplier?.status==="approved" && <div className="buyer-workspace">
             <h3>RFQs matched to your factory ({supplierRfqs.length})</h3>
             {supplierRfqs.length===0 ? <p className="account-copy">No buyer requests have been assigned to your factory yet.</p> : supplierRfqs.map(r=>{
-              const draft=quoteDrafts[r.id]||{unit_price:"",currency:"EUR",minimum_order:"",lead_time_days:"",sample_available:false,notes:""};
+              const quote=(r.supplier_quotes||[]).find((q:any)=>q.manufacturer_id===supplier.manufacturer_id);
+              const draft=quoteDrafts[r.id]||(quote?{unit_price:String(quote.unit_price),currency:quote.currency,minimum_order:quote.minimum_order?String(quote.minimum_order):"",lead_time_days:quote.lead_time_days?String(quote.lead_time_days):"",sample_available:quote.sample_available,notes:quote.notes||""}:{unit_price:"",currency:"EUR",minimum_order:"",lead_time_days:"",sample_available:false,notes:""});
               const decision=(r.rfq_quote_decisions||[]).find((d:any)=>d.manufacturer_id===supplier.manufacturer_id);
               return <div className="admin-review-item" key={r.id}><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()}</span>{decision?.status==="selected"?<p className="quote-decision selected">Your quotation has been selected. Contact the buyer through messages to confirm the next steps.</p>:<><p>{r.material_specs||"No additional specifications supplied."}</p><div className="account-form">
                 <label>Unit price<input type="number" min="0.0001" step="0.0001" value={draft.unit_price} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,unit_price:e.target.value}}))}/></label>
@@ -279,7 +289,7 @@ export default function AccountPortal() {
                 <label>Lead time (days)<input type="number" min="1" max="730" value={draft.lead_time_days} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,lead_time_days:e.target.value}}))}/></label>
                 <label>Notes<textarea rows={2} maxLength={2000} value={draft.notes} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,notes:e.target.value}}))}/></label>
                 <label className="account-checkbox"><input type="checkbox" checked={draft.sample_available} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,sample_available:e.target.checked}}))}/> Samples available</label>
-                <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button>
+                <div className="quote-actions"><button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>{quote?.status==="withdrawn"?"Resubmit quotation ↗":quote?"Update quotation ↗":"Send quotation ↗"}</button>{quote&&quote.status!=="withdrawn"&&<button className="quote-withdraw-button" disabled={busy} onClick={()=>withdrawQuote(r.id,supplier.manufacturer_id!)}>Withdraw</button>}</div>
               </div></> }</div>;
             })}
           </div>}
