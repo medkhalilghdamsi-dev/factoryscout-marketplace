@@ -34,6 +34,8 @@ export default function AccountPortal() {
   const [savedManufacturers,setSavedManufacturers] = useState<any[]>([]);
   const [buyerRfqs,setBuyerRfqs] = useState<any[]>([]);
   const [supplierRfqs,setSupplierRfqs] = useState<any[]>([]);
+  const [conversations,setConversations] = useState<any[]>([]);
+  const [messageDrafts,setMessageDrafts] = useState<Record<string,string>>({});
   const [quoteDrafts,setQuoteDrafts] = useState<Record<string,{unit_price:string;currency:string;minimum_order:string;lead_time_days:string;sample_available:boolean;notes:string}>>({});
 
   const loadAccount = async (current:User|null) => {
@@ -52,6 +54,8 @@ export default function AccountPortal() {
     if (s.error && s.error.code !== "PGRST116") setMessage("Supplier workspace could not be loaded.");
     else setSupplier(s.data as SupplierAccount|null);
     if (!saved.error) setSavedManufacturers(saved.data || []);
+    const {data:threads,error:threadsError} = await supabase.from("rfq_conversations").select("*,rfq_messages(*)").order("updated_at",{ascending:false});
+    if (!threadsError) setConversations(threads || []);
     if (p.data?.account_type === "buyer") {
       const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});
       if (!error) setBuyerRfqs(data || []);
@@ -204,7 +208,46 @@ export default function AccountPortal() {
     setBusy(false);
   };
 
-  const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setMessage("You have signed out."); };
+  const refreshConversations = async () => {
+    if (!supabase) return;
+    const {data,error} = await supabase.from("rfq_conversations").select("*,rfq_messages(*)").order("updated_at",{ascending:false});
+    if (!error) setConversations(data || []);
+  };
+
+  const openConversation = async (rfq:any, manufacturerId:string) => {
+    if (!supabase || !user) return;
+    setBusy(true); setMessage("");
+    let {data,error} = await supabase.from("rfq_conversations").select("*").eq("rfq_id",rfq.id).eq("manufacturer_id",manufacturerId).maybeSingle();
+    if (!data && !error) {
+      const buyerId = rfq.buyer_id || user.id;
+      const supplierOwnerId = profile?.account_type==="supplier" ? user.id : null;
+      if (supplierOwnerId) {
+        const {data:created,error:createError} = await supabase.from("rfq_conversations").insert({rfq_id:rfq.id,manufacturer_id:manufacturerId,buyer_id:buyerId,supplier_owner_id:supplierOwnerId}).select("*").single();
+        data=created; error=createError;
+      } else {
+        const {data:account,error:accountError} = await supabase.from("supplier_accounts").select("owner_id").eq("manufacturer_id",manufacturerId).eq("status","approved").maybeSingle();
+        if (accountError || !account) { setMessage("This supplier does not have an approved messaging account yet."); setBusy(false); return; }
+        const {data:created,error:createError} = await supabase.from("rfq_conversations").insert({rfq_id:rfq.id,manufacturer_id:manufacturerId,buyer_id:user.id,supplier_owner_id:account.owner_id}).select("*").single();
+        data=created; error=createError;
+      }
+    }
+    if (error && error.code!=="23505") setMessage("Conversation could not be opened: "+error.message);
+    else { await refreshConversations(); setMessage("Conversation opened. Send your message below."); }
+    setBusy(false);
+  };
+
+  const sendMessage = async (conversationId:string) => {
+    if (!supabase || !user) return;
+    const body=(messageDrafts[conversationId]||"").trim();
+    if (!body) return;
+    setBusy(true); setMessage("");
+    const {error}=await supabase.from("rfq_messages").insert({conversation_id:conversationId,sender_id:user.id,body});
+    if (error) setMessage("Message could not be sent: "+error.message);
+    else { setMessageDrafts(v=>({...v,[conversationId]:""})); await refreshConversations(); }
+    setBusy(false);
+  };
+
+  const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setConversations([]); setMessage("You have signed out."); };
 
   return <>
     <button className="account-trigger" onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>
@@ -270,7 +313,7 @@ export default function AccountPortal() {
                 <label>Lead time (days)<input type="number" min="1" max="730" value={draft.lead_time_days} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,lead_time_days:e.target.value}}))}/></label>
                 <label>Notes<textarea rows={2} maxLength={2000} value={draft.notes} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,notes:e.target.value}}))}/></label>
                 <label className="account-checkbox"><input type="checkbox" checked={draft.sample_available} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,sample_available:e.target.checked}}))}/> Samples available</label>
-                <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button>
+                <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button><button disabled={busy} onClick={()=>openConversation(r,supplier.manufacturer_id!)}>Open buyer conversation ↗</button>
               </div></div>;
             })}
           </div>}
@@ -278,8 +321,10 @@ export default function AccountPortal() {
             <h3>Saved manufacturers ({savedManufacturers.length})</h3>
             {savedManufacturers.length===0 ? <p className="account-copy">Your saved suppliers will appear here. Browse the directory and tap the heart on a factory profile to keep it in your shortlist.</p> : savedManufacturers.map(row=><div className="saved-manufacturer-row" key={row.manufacturer_id}><div><b>{row.manufacturers?.name || row.manufacturer_id}</b><span>{row.manufacturers?.region || "FactoryScout supplier"}</span></div><button disabled={busy} onClick={()=>removeSavedManufacturer(row.manufacturer_id)}>Remove</button></div>)}
             <h3>My requests for quotation ({buyerRfqs.length})</h3>
-            {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}>{q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}</div></div>)}
+            {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}>{q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}{(r.rfq_targets||[]).map((target:any)=><button key={target.manufacturer_id} disabled={busy} onClick={()=>openConversation(r,target.manufacturer_id)}>Message supplier · {target.manufacturer_id} ↗</button>)}</div></div>)}
           </div>}
+                      <h3>Buyer–supplier messages ({conversations.length})</h3>
+            {conversations.length===0 ? <p className="account-copy">No conversations yet. Open a conversation from one of your RFQs to contact its assigned supplier.</p> : conversations.map(thread=><div className="message-thread" key={thread.id}><div className="message-thread-heading"><b>{thread.manufacturer_id}</b><small>RFQ conversation · {new Date(thread.created_at).toLocaleDateString()}</small></div><div className="message-history">{(thread.rfq_messages||[]).slice().sort((x:any,y:any)=>new Date(x.created_at).getTime()-new Date(y.created_at).getTime()).map((m:any)=><div className={m.sender_id===user?.id?"message-bubble own":"message-bubble"} key={m.id}><p>{m.body}</p><small>{m.sender_id===user?.id?"You":"Supplier / buyer"} · {new Date(m.created_at).toLocaleString()}</small></div>)}</div><div className="message-compose"><textarea rows={2} maxLength={4000} placeholder="Write a message about this RFQ…" value={messageDrafts[thread.id]||""} onChange={e=>setMessageDrafts(v=>({...v,[thread.id]:e.target.value}))}/><button disabled={busy||!(messageDrafts[thread.id]||"").trim()} onClick={()=>sendMessage(thread.id)}>Send ↗</button></div></div>)}
           <button className="account-switch" onClick={signOut}>Sign out</button>
         </>}
         {message && <p className="account-message" role="status">{message}</p>}
