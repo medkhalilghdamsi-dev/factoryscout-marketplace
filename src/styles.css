@@ -27,3 +27,5 @@ body{background:var(--paper)}
 footer{padding:32px 7.2%}.profile-modal{border-radius:4px}.form-grid input,.form-grid textarea{border-radius:2px}.toast{border-radius:3px}
 @media(max-width:900px){.topbar{padding-inline:5%}.hero{padding-inline:5%}.section{padding-inline:6%}.hero h1{font-size:60px}.visual-image{height:440px}.nav{gap:18px}}
 @media(max-width:640px){.topbar{padding-inline:5%}.hero{padding:58px 5% 0}.hero h1{font-size:58px;letter-spacing:-3.7px}.hero-text{font-size:13px}.visual-image{height:340px}.floating-card{left:-5px;min-width:260px}.section{padding:74px 5%}.section h2{letter-spacing:-2.4px}.card-art{height:170px}.how{padding-block:76px}.steps{margin-top:38px}.list-cta{padding:58px 6%}.list-cta h2{font-size:43px}footer{padding-inline:5%}}
+
+.honeypot{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}.privacy-note a{text-decoration:underline;color:#536546}
