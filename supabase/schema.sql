@@ -660,6 +660,13 @@ begin
    v_action := 'enquiry_status_changed';
    v_old := jsonb_build_object('status',old.status);
    v_new := jsonb_build_object('status',new.status);
+ elsif tg_table_name='rfqs' then
+   if old.status is not distinct from new.status then return new; end if;
+   v_entity_type := 'rfq';
+   v_entity_id := new.id::text;
+   v_action := 'rfq_status_changed';
+   v_old := jsonb_build_object('status',old.status);
+   v_new := jsonb_build_object('status',new.status);
  else
    return new;
  end if;
@@ -671,6 +678,8 @@ $$;
 revoke all on function private.audit_factoryscout_review_event() from public,anon,authenticated;
 drop trigger if exists audit_enquiry_status on public.enquiries;
 create trigger audit_enquiry_status after update of status on public.enquiries for each row execute function private.audit_factoryscout_review_event();
+drop trigger if exists audit_rfq_status on public.rfqs;
+create trigger audit_rfq_status after update of status on public.rfqs for each row execute function private.audit_factoryscout_review_event();
 
 
 -- Admin-only pre-launch supplier prospect pipeline.
