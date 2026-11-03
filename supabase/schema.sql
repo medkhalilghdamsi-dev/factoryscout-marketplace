@@ -390,203 +390,103 @@ drop policy if exists "Authenticated users can view published manufacturers" on 
 create policy "Authenticated users can view published manufacturers" on public.manufacturers for select to authenticated using (is_published = true);
 
 
--- RFQ ownership, buyer history and supplier quotations.
+-- RFQ ownership, buyer history, supplier conversations and quotations.
 alter table public.rfqs add column if not exists buyer_id uuid references auth.users(id) on delete set null;
 create index if not exists rfqs_buyer_created_idx on public.rfqs(buyer_id,created_at desc);
+grant select,insert,update on public.rfqs to authenticated;
+grant select,insert on public.rfq_targets to authenticated;
+revoke insert on public.rfqs,public.rfq_targets from anon;
+revoke insert on public.rfq_conversations from anon;
 drop policy if exists "Buyers can read their own RFQs" on public.rfqs;
 create policy "Buyers can read their own RFQs" on public.rfqs for select to authenticated using (buyer_id=(select auth.uid()));
 drop policy if exists "Assigned suppliers can read RFQs" on public.rfqs;
 create policy "Assigned suppliers can read RFQs" on public.rfqs for select to authenticated using (exists(select 1 from public.rfq_targets t join public.supplier_accounts sa on sa.manufacturer_id=t.manufacturer_id where t.rfq_id=rfqs.id and sa.owner_id=(select auth.uid()) and sa.status='approved'));
 drop policy if exists "Authenticated buyers can submit RFQs" on public.rfqs;
-create policy "Authenticated buyers can submit RFQs" on public.rfqs for insert to authenticated with check (buyer_id=(select auth.uid()) and status='new');
+create policy "Authenticated buyers can submit RFQs" on public.rfqs for insert to authenticated with check (buyer_id=(select auth.uid()) and status='new' and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer'));
 drop policy if exists "Buyers can read targets of own RFQs" on public.rfq_targets;
-create policy "Buyers can read targets of own RFQs" on public.rfq_targets for select to authenticated using (rfq_id in (select id from public.rfqs where buyer_id=(select auth.uid())));
+create policy "Buyers can read targets of own RFQs" on public.rfq_targets for select to authenticated using (rfq_id in(select id from public.rfqs where buyer_id=(select auth.uid())));
 drop policy if exists "Buyers can add targets to own RFQs" on public.rfq_targets;
-create policy "Buyers can add targets to own RFQs" on public.rfq_targets for insert to authenticated with check (rfq_id in (select id from public.rfqs where buyer_id=(select auth.uid())) and manufacturer_id in (select id from public.manufacturers where is_published=true));
+create policy "Buyers can add targets to own RFQs" on public.rfq_targets for insert to authenticated with check (rfq_id in(select r.id from public.rfqs r where r.buyer_id=(select auth.uid())) and manufacturer_id in(select m.id from public.manufacturers m where m.is_published=true) and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer'));
+drop policy if exists "Assigned suppliers can read their RFQ targets" on public.rfq_targets;
+create policy "Assigned suppliers can read their RFQ targets" on public.rfq_targets for select to authenticated using (manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved'));
 
-create or replace function public.submit_rfq_for_buyer(
- p_buyer_name text,p_buyer_email text,p_company text,p_product_type text,
- p_quantity integer,p_target_price text,p_delivery_country text,p_material_specs text,
- p_sample_required boolean,p_target_date date,p_manufacturer_ids text[]
-) returns uuid
-language plpgsql security invoker set search_path=''
-as $
+create table if not exists public.rfq_conversations (
+ id uuid primary key default gen_random_uuid(),rfq_id uuid not null,manufacturer_id text not null,
+ buyer_id uuid not null references auth.users(id) on delete cascade,
+ supplier_owner_id uuid not null references auth.users(id) on delete cascade,
+ created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
+ foreign key(rfq_id,manufacturer_id) references public.rfq_targets(rfq_id,manufacturer_id) on delete cascade,
+ unique(rfq_id,manufacturer_id),check(buyer_id<>supplier_owner_id)
+);
+create index if not exists rfq_conversations_buyer_idx on public.rfq_conversations(buyer_id,updated_at desc);
+create index if not exists rfq_conversations_supplier_idx on public.rfq_conversations(supplier_owner_id,updated_at desc);
+alter table public.rfq_conversations enable row level security;
+revoke all on public.rfq_conversations from anon,authenticated;
+grant select,insert,update on public.rfq_conversations to authenticated;
+drop policy if exists "RFQ participants can read conversations" on public.rfq_conversations;
+create policy "RFQ participants can read conversations" on public.rfq_conversations for select to authenticated using ((select auth.uid())=buyer_id or (select auth.uid())=supplier_owner_id);
+drop policy if exists "RFQ participants can open conversations" on public.rfq_conversations;
+create policy "RFQ participants can open conversations" on public.rfq_conversations for insert to authenticated with check (
+ (select auth.uid())=buyer_id
+ and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer')
+ and exists(select 1 from public.rfqs r join public.rfq_targets t on t.rfq_id=r.id join public.supplier_accounts sa on sa.manufacturer_id=t.manufacturer_id
+ where r.id=rfq_conversations.rfq_id and r.buyer_id=rfq_conversations.buyer_id and t.manufacturer_id=rfq_conversations.manufacturer_id and sa.owner_id=rfq_conversations.supplier_owner_id and sa.status='approved')
+);
+
+create table if not exists public.rfq_messages (
+ id uuid primary key default gen_random_uuid(),conversation_id uuid not null references public.rfq_conversations(id) on delete cascade,
+ sender_id uuid not null references auth.users(id) on delete cascade,
+ body text not null check(char_length(btrim(body)) between 1 and 4000),
+ created_at timestamptz not null default now(),read_at timestamptz
+);
+create index if not exists rfq_messages_conversation_created_idx on public.rfq_messages(conversation_id,created_at);
+create index if not exists rfq_messages_sender_idx on public.rfq_messages(sender_id);
+create index if not exists rfq_messages_unread_idx on public.rfq_messages(conversation_id,read_at,sender_id);
+alter table public.rfq_messages enable row level security;
+revoke all on public.rfq_messages from anon,authenticated;
+grant select,insert,update on public.rfq_messages to authenticated;
+drop policy if exists "Conversation participants can read messages" on public.rfq_messages;
+create policy "Conversation participants can read messages" on public.rfq_messages for select to authenticated using (exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id)));
+drop policy if exists "Participants can send messages" on public.rfq_messages;
+create policy "Participants can send messages" on public.rfq_messages for insert to authenticated with check (sender_id=(select auth.uid()) and exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id)));
+drop policy if exists "Participants can mark received messages as read" on public.rfq_messages;
+create policy "Participants can mark received messages as read" on public.rfq_messages for update to authenticated using (sender_id<>(select auth.uid()) and exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id))) with check (sender_id<>(select auth.uid()) and exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id)));
+
+create or replace function public.submit_rfq_for_buyer(p_buyer_name text,p_buyer_email text,p_company text,p_product_type text,p_quantity integer,p_target_price text,p_delivery_country text,p_material_specs text,p_sample_required boolean,p_target_date date,p_manufacturer_ids text[])
+returns uuid language plpgsql security invoker set search_path=''
+as $$
 declare v_id uuid;
 begin
  if (select auth.uid()) is null then raise exception 'Sign in required'; end if;
- if not exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer') then
-   raise exception 'A buyer account is required to submit an RFQ';
- end if;
- if p_buyer_name is null or char_length(btrim(p_buyer_name)) not between 2 and 120
-   or p_buyer_email is null or char_length(btrim(p_buyer_email)) not between 5 and 254
-   or btrim(p_buyer_email) !~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+
-revoke all on function public.submit_rfq_for_buyer(text,text,text,text,integer,text,text,text,boolean,date,text[]) from public,anon;
-grant execute on function public.submit_rfq_for_buyer(text,text,text,text,integer,text,text,text,boolean,date,text[]) to authenticated;
-
-create table if not exists public.supplier_quotes(
- id uuid primary key default gen_random_uuid(),rfq_id uuid not null,manufacturer_id text not null,
- supplier_owner_id uuid not null references auth.users(id) on delete cascade,
- unit_price numeric(12,4) not null check(unit_price>0),currency text not null default 'EUR' check(currency in ('EUR','USD','TND','GBP')),
- minimum_order integer,lead_time_days integer,sample_available boolean not null default false,notes text not null default '',
- valid_until date,status text not null default 'submitted',created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
- foreign key(rfq_id,manufacturer_id) references public.rfq_targets(rfq_id,manufacturer_id) on delete cascade,unique(rfq_id,manufacturer_id)
-);
-create index if not exists supplier_quotes_owner_idx on public.supplier_quotes(supplier_owner_id,created_at desc);
-create index if not exists supplier_quotes_rfq_idx on public.supplier_quotes(rfq_id);
-alter table public.supplier_quotes enable row level security;
-grant select,insert,update on public.supplier_quotes to authenticated;
-drop policy if exists "Quote owners can read their quotes" on public.supplier_quotes;
-create policy "Quote owners can read their quotes" on public.supplier_quotes for select to authenticated using(supplier_owner_id=(select auth.uid()));
-drop policy if exists "Buyers can read own RFQ quotes" on public.supplier_quotes;
-create policy "Buyers can read own RFQ quotes" on public.supplier_quotes for select to authenticated using(rfq_id in(select id from public.rfqs where buyer_id=(select auth.uid())));
-drop policy if exists "Only assigned supplier can submit quote" on public.supplier_quotes;
-create policy "Only assigned supplier can submit quote" on public.supplier_quotes for insert to authenticated with check(supplier_owner_id=(select auth.uid()) and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets) and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved'));
-drop policy if exists "Assigned suppliers can update own quotes" on public.supplier_quotes;
-create policy "Assigned suppliers can update own quotes" on public.supplier_quotes for update to authenticated using(supplier_owner_id=(select auth.uid())) with check(supplier_owner_id=(select auth.uid()) and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved') and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets));
-
-drop policy if exists "Assigned suppliers can read their RFQ targets" on public.rfq_targets;
-create policy "Assigned suppliers can read their RFQ targets" on public.rfq_targets for select to authenticated using (manufacturer_id in (select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved'));
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_minimum_order_check;
-alter table public.supplier_quotes add constraint supplier_quotes_minimum_order_check check (minimum_order is null or minimum_order > 0);
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_lead_time_check;
-alter table public.supplier_quotes add constraint supplier_quotes_lead_time_check check (lead_time_days is null or lead_time_days between 1 and 730);
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_notes_check;
-alter table public.supplier_quotes add constraint supplier_quotes_notes_check check (char_length(notes) <= 2000);
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_status_check;
-alter table public.supplier_quotes add constraint supplier_quotes_status_check check (status in ('submitted','updated','withdrawn'));
-
-
--- Buyer quote selection and supplier decision visibility.
--- Buyer quote selection: one chosen supplier per RFQ, visible to both parties.
-create table if not exists public.rfq_quote_decisions (
- id uuid primary key default gen_random_uuid(),
- rfq_id uuid not null references public.rfqs(id) on delete cascade,
- manufacturer_id text not null,
- buyer_id uuid not null references auth.users(id) on delete cascade,
- status text not null default 'selected' check (status in ('selected','not_selected')),
- created_at timestamptz not null default now(),
- updated_at timestamptz not null default now(),
- foreign key (rfq_id,manufacturer_id) references public.supplier_quotes(rfq_id,manufacturer_id) on delete cascade,
- unique (rfq_id,manufacturer_id)
-);
-create unique index if not exists rfq_quote_decisions_one_selected_per_rfq
- on public.rfq_quote_decisions(rfq_id) where status='selected';
-create index if not exists rfq_quote_decisions_supplier_idx
- on public.rfq_quote_decisions(manufacturer_id,updated_at desc);
-create index if not exists rfq_quote_decisions_buyer_idx
- on public.rfq_quote_decisions(buyer_id,updated_at desc);
-alter table public.rfq_quote_decisions enable row level security;
-revoke all on public.rfq_quote_decisions from anon,authenticated;
-grant select,insert,update on public.rfq_quote_decisions to authenticated;
-
-drop policy if exists "Buyers can read own quote decisions" on public.rfq_quote_decisions;
-drop policy if exists "Assigned suppliers can read quote decisions" on public.rfq_quote_decisions;
-drop policy if exists "Participants can read quote decisions" on public.rfq_quote_decisions;
-create policy "Participants can read quote decisions"
- on public.rfq_quote_decisions for select to authenticated
- using (
-   (buyer_id=(select auth.uid()) and exists(
-     select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid())
-   ))
-   or exists(
-     select 1 from public.supplier_accounts sa
-     where sa.owner_id=(select auth.uid())
-       and sa.manufacturer_id=rfq_quote_decisions.manufacturer_id
-       and sa.status='approved'
-   )
- );
-drop policy if exists "Buyers can create own quote decisions" on public.rfq_quote_decisions;
-create policy "Buyers can create own quote decisions"
- on public.rfq_quote_decisions for insert to authenticated
- with check (
-   buyer_id=(select auth.uid())
-   and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer')
-   and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid()))
-   and exists(select 1 from public.supplier_quotes q where q.rfq_id=rfq_quote_decisions.rfq_id and q.manufacturer_id=rfq_quote_decisions.manufacturer_id and q.status in ('submitted','updated'))
- );
-drop policy if exists "Buyers can update own quote decisions" on public.rfq_quote_decisions;
-create policy "Buyers can update own quote decisions"
- on public.rfq_quote_decisions for update to authenticated
- using (buyer_id=(select auth.uid()) and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid())))
- with check (
-   buyer_id=(select auth.uid())
-   and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer')
-   and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid()))
-   and (
-     status='not_selected'
-     or exists(select 1 from public.supplier_quotes q where q.rfq_id=rfq_quote_decisions.rfq_id and q.manufacturer_id=rfq_quote_decisions.manufacturer_id and q.status in ('submitted','updated'))
-   )
- );
-
-create or replace function public.select_rfq_quote(p_rfq_id uuid,p_manufacturer_id text)
-returns void
-language plpgsql
-security invoker
-set search_path=''
-as $$
-begin
- if (select auth.uid()) is null then raise exception 'Sign in required'; end if;
- if not exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer') then
-   raise exception 'A buyer account is required to select a quotation';
- end if;
- if not exists(select 1 from public.rfqs r where r.id=p_rfq_id and r.buyer_id=(select auth.uid())) then
-   raise exception 'RFQ not found for this buyer';
- end if;
- if not exists(select 1 from public.supplier_quotes q where q.rfq_id=p_rfq_id and q.manufacturer_id=p_manufacturer_id and q.status in ('submitted','updated')) then
-   raise exception 'This supplier quotation is no longer available';
- end if;
- update public.rfq_quote_decisions
- set status='not_selected',updated_at=now()
- where rfq_id=p_rfq_id and buyer_id=(select auth.uid()) and status='selected';
- insert into public.rfq_quote_decisions(rfq_id,manufacturer_id,buyer_id,status)
- values(p_rfq_id,p_manufacturer_id,(select auth.uid()),'selected')
- on conflict(rfq_id,manufacturer_id)
- do update set status='selected',updated_at=now()
- where public.rfq_quote_decisions.buyer_id=(select auth.uid());
-end;
-$$;
-revoke all on function public.select_rfq_quote(uuid,text) from public,anon;
-grant execute on function public.select_rfq_quote(uuid,text) to authenticated;
-
-   or char_length(coalesce(p_company,'')) > 160
-   or p_product_type is null or char_length(btrim(p_product_type)) not between 2 and 160
-   or p_quantity is null or p_quantity not between 1 and 10000000
-   or char_length(coalesce(p_target_price,'')) > 120
-   or p_delivery_country is null or char_length(btrim(p_delivery_country)) not between 2 and 100
-   or char_length(coalesce(p_material_specs,'')) > 3000
-   or p_sample_required is null
-   or coalesce(cardinality(p_manufacturer_ids),0) not between 1 and 5
- then raise exception 'Invalid RFQ fields'; end if;
- if exists(select 1 from unnest(p_manufacturer_ids) x group by x having count(*)>1)
-   or exists(select 1 from unnest(p_manufacturer_ids) x where not exists(select 1 from public.manufacturers m where m.id=x and m.is_published=true))
- then raise exception 'Invalid supplier selection'; end if;
- if p_target_date is not null and p_target_date < current_date then raise exception 'Target date cannot be in the past'; end if;
+ if not exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer') then raise exception 'A buyer account is required to submit an RFQ'; end if;
+ if p_buyer_name is null or char_length(btrim(p_buyer_name)) not between 2 and 120 or p_buyer_email is null or char_length(btrim(p_buyer_email)) not between 5 and 254 or btrim(p_buyer_email) !~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$' or char_length(coalesce(p_company,''))>160 or p_product_type is null or char_length(btrim(p_product_type)) not between 2 and 160 or p_quantity is null or p_quantity not between 1 and 10000000 or char_length(coalesce(p_target_price,''))>120 or p_delivery_country is null or char_length(btrim(p_delivery_country)) not between 2 and 100 or char_length(coalesce(p_material_specs,''))>3000 or p_sample_required is null or coalesce(cardinality(p_manufacturer_ids),0) not between 1 and 5 then raise exception 'Invalid RFQ fields'; end if;
+ if exists(select 1 from unnest(p_manufacturer_ids) x group by x having count(*)>1) or exists(select 1 from unnest(p_manufacturer_ids) x where not exists(select 1 from public.manufacturers m where m.id=x and m.is_published=true)) then raise exception 'Invalid supplier selection'; end if;
+ if p_target_date is not null and p_target_date<current_date then raise exception 'Target date cannot be in the past'; end if;
  insert into public.rfqs(id,buyer_id,buyer_name,buyer_email,company,product_type,quantity,target_price,delivery_country,material_specs,sample_required,target_date,status)
- values(gen_random_uuid(),(select auth.uid()),btrim(p_buyer_name),btrim(p_buyer_email),btrim(coalesce(p_company,'')),btrim(p_product_type),p_quantity,btrim(coalesce(p_target_price,'')),btrim(p_delivery_country),btrim(coalesce(p_material_specs,'')),p_sample_required,p_target_date,'new')
- returning id into v_id;
+ values(gen_random_uuid(),(select auth.uid()),btrim(p_buyer_name),btrim(p_buyer_email),btrim(coalesce(p_company,'')),btrim(p_product_type),p_quantity,btrim(coalesce(p_target_price,'')),btrim(p_delivery_country),btrim(coalesce(p_material_specs,'')),p_sample_required,p_target_date,'new') returning id into v_id;
  insert into public.rfq_targets(rfq_id,manufacturer_id) select v_id,x from unnest(p_manufacturer_ids) x;
  insert into public.rfq_conversations(rfq_id,manufacturer_id,buyer_id,supplier_owner_id)
- select v_id,t.manufacturer_id,(select auth.uid()),sa.owner_id
- from public.rfq_targets t join public.supplier_accounts sa
-   on sa.manufacturer_id=t.manufacturer_id and sa.status='approved'
- where t.rfq_id=v_id
- on conflict(rfq_id,manufacturer_id) do nothing;
+ select v_id,t.manufacturer_id,(select auth.uid()),sa.owner_id from public.rfq_targets t join public.supplier_accounts sa on sa.manufacturer_id=t.manufacturer_id and sa.status='approved' where t.rfq_id=v_id on conflict(rfq_id,manufacturer_id) do nothing;
  return v_id;
-end; $;
+end;
+$$;
 revoke all on function public.submit_rfq_for_buyer(text,text,text,text,integer,text,text,text,boolean,date,text[]) from public,anon;
 grant execute on function public.submit_rfq_for_buyer(text,text,text,text,integer,text,text,text,boolean,date,text[]) to authenticated;
 
-create table if not exists public.supplier_quotes(
+create table if not exists public.supplier_quotes (
  id uuid primary key default gen_random_uuid(),rfq_id uuid not null,manufacturer_id text not null,
  supplier_owner_id uuid not null references auth.users(id) on delete cascade,
  unit_price numeric(12,4) not null check(unit_price>0),currency text not null default 'EUR' check(currency in ('EUR','USD','TND','GBP')),
- minimum_order integer,lead_time_days integer,sample_available boolean not null default false,notes text not null default '',
- valid_until date,status text not null default 'submitted',created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
+ minimum_order integer check(minimum_order is null or minimum_order>0),lead_time_days integer check(lead_time_days is null or lead_time_days between 1 and 730),
+ sample_available boolean not null default false,notes text not null default '' check(char_length(notes)<=2000),
+ valid_until date,status text not null default 'submitted' check(status in ('submitted','updated','withdrawn')),
+ created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  foreign key(rfq_id,manufacturer_id) references public.rfq_targets(rfq_id,manufacturer_id) on delete cascade,unique(rfq_id,manufacturer_id)
 );
 create index if not exists supplier_quotes_owner_idx on public.supplier_quotes(supplier_owner_id,created_at desc);
 create index if not exists supplier_quotes_rfq_idx on public.supplier_quotes(rfq_id);
 alter table public.supplier_quotes enable row level security;
+revoke all on public.supplier_quotes from anon,authenticated;
 grant select,insert,update on public.supplier_quotes to authenticated;
 drop policy if exists "Quote owners can read their quotes" on public.supplier_quotes;
 create policy "Quote owners can read their quotes" on public.supplier_quotes for select to authenticated using(supplier_owner_id=(select auth.uid()));
@@ -594,208 +494,61 @@ drop policy if exists "Buyers can read own RFQ quotes" on public.supplier_quotes
 create policy "Buyers can read own RFQ quotes" on public.supplier_quotes for select to authenticated using(rfq_id in(select id from public.rfqs where buyer_id=(select auth.uid())));
 drop policy if exists "Only assigned supplier can submit quote" on public.supplier_quotes;
 create policy "Only assigned supplier can submit quote" on public.supplier_quotes for insert to authenticated with check(supplier_owner_id=(select auth.uid()) and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets) and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved'));
-drop policy if exists "Assigned suppliers can update own quotes" on public.supplier_quotes;
-create policy "Assigned suppliers can update own quotes" on public.supplier_quotes for update to authenticated using(supplier_owner_id=(select auth.uid())) with check(supplier_owner_id=(select auth.uid()) and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved') and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets));
 
-drop policy if exists "Assigned suppliers can read their RFQ targets" on public.rfq_targets;
-create policy "Assigned suppliers can read their RFQ targets" on public.rfq_targets for select to authenticated using (manufacturer_id in (select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved'));
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_minimum_order_check;
-alter table public.supplier_quotes add constraint supplier_quotes_minimum_order_check check (minimum_order is null or minimum_order > 0);
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_lead_time_check;
-alter table public.supplier_quotes add constraint supplier_quotes_lead_time_check check (lead_time_days is null or lead_time_days between 1 and 730);
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_notes_check;
-alter table public.supplier_quotes add constraint supplier_quotes_notes_check check (char_length(notes) <= 2000);
-alter table public.supplier_quotes drop constraint if exists supplier_quotes_status_check;
-alter table public.supplier_quotes add constraint supplier_quotes_status_check check (status in ('submitted','updated','withdrawn'));
-
-
--- Buyer quote selection and supplier decision visibility.
--- Buyer quote selection: one chosen supplier per RFQ, visible to both parties.
 create table if not exists public.rfq_quote_decisions (
- id uuid primary key default gen_random_uuid(),
- rfq_id uuid not null references public.rfqs(id) on delete cascade,
- manufacturer_id text not null,
- buyer_id uuid not null references auth.users(id) on delete cascade,
- status text not null default 'selected' check (status in ('selected','not_selected')),
- created_at timestamptz not null default now(),
- updated_at timestamptz not null default now(),
- foreign key (rfq_id,manufacturer_id) references public.supplier_quotes(rfq_id,manufacturer_id) on delete cascade,
- unique (rfq_id,manufacturer_id)
+ id uuid primary key default gen_random_uuid(),rfq_id uuid not null references public.rfqs(id) on delete cascade,
+ manufacturer_id text not null,buyer_id uuid not null references auth.users(id) on delete cascade,
+ status text not null default 'selected' check(status in ('selected','not_selected')),
+ created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
+ foreign key(rfq_id,manufacturer_id) references public.supplier_quotes(rfq_id,manufacturer_id) on delete cascade,
+ unique(rfq_id,manufacturer_id)
 );
-create unique index if not exists rfq_quote_decisions_one_selected_per_rfq
- on public.rfq_quote_decisions(rfq_id) where status='selected';
-create index if not exists rfq_quote_decisions_supplier_idx
- on public.rfq_quote_decisions(manufacturer_id,updated_at desc);
+create unique index if not exists rfq_quote_decisions_one_selected_per_rfq on public.rfq_quote_decisions(rfq_id) where status='selected';
+create index if not exists rfq_quote_decisions_supplier_idx on public.rfq_quote_decisions(manufacturer_id,updated_at desc);
+create index if not exists rfq_quote_decisions_buyer_idx on public.rfq_quote_decisions(buyer_id,updated_at desc);
 alter table public.rfq_quote_decisions enable row level security;
 revoke all on public.rfq_quote_decisions from anon,authenticated;
 grant select,insert,update on public.rfq_quote_decisions to authenticated;
-
-drop policy if exists "Buyers can read own quote decisions" on public.rfq_quote_decisions;
-create policy "Buyers can read own quote decisions"
- on public.rfq_quote_decisions for select to authenticated
- using (buyer_id=(select auth.uid()) and exists(
-   select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid())
- ));
-drop policy if exists "Assigned suppliers can read quote decisions" on public.rfq_quote_decisions;
-create policy "Assigned suppliers can read quote decisions"
- on public.rfq_quote_decisions for select to authenticated
- using (exists(
-   select 1 from public.supplier_accounts sa
-   where sa.owner_id=(select auth.uid()) and sa.manufacturer_id=rfq_quote_decisions.manufacturer_id and sa.status='approved'
- ));
+drop policy if exists "Participants can read quote decisions" on public.rfq_quote_decisions;
+create policy "Participants can read quote decisions" on public.rfq_quote_decisions for select to authenticated using (
+ (buyer_id=(select auth.uid()) and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid())))
+ or exists(select 1 from public.supplier_accounts sa where sa.owner_id=(select auth.uid()) and sa.manufacturer_id=rfq_quote_decisions.manufacturer_id and sa.status='approved')
+);
 drop policy if exists "Buyers can create own quote decisions" on public.rfq_quote_decisions;
-create policy "Buyers can create own quote decisions"
- on public.rfq_quote_decisions for insert to authenticated
- with check (
-   buyer_id=(select auth.uid())
-   and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer')
-   and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid()))
-   and exists(select 1 from public.supplier_quotes q where q.rfq_id=rfq_quote_decisions.rfq_id and q.manufacturer_id=rfq_quote_decisions.manufacturer_id and q.status in ('submitted','updated'))
- );
+create policy "Buyers can create own quote decisions" on public.rfq_quote_decisions for insert to authenticated with check (
+ buyer_id=(select auth.uid()) and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer')
+ and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid()))
+ and exists(select 1 from public.supplier_quotes q where q.rfq_id=rfq_quote_decisions.rfq_id and q.manufacturer_id=rfq_quote_decisions.manufacturer_id and q.status in ('submitted','updated'))
+);
 drop policy if exists "Buyers can update own quote decisions" on public.rfq_quote_decisions;
-create policy "Buyers can update own quote decisions"
- on public.rfq_quote_decisions for update to authenticated
- using (buyer_id=(select auth.uid()) and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid())))
- with check (
-   buyer_id=(select auth.uid())
-   and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer')
-   and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid()))
-   and (
-     status='not_selected'
-     or exists(select 1 from public.supplier_quotes q where q.rfq_id=rfq_quote_decisions.rfq_id and q.manufacturer_id=rfq_quote_decisions.manufacturer_id and q.status in ('submitted','updated'))
-   )
- );
-
+create policy "Buyers can update own quote decisions" on public.rfq_quote_decisions for update to authenticated using (
+ buyer_id=(select auth.uid()) and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid()))
+) with check (
+ buyer_id=(select auth.uid()) and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer')
+ and exists(select 1 from public.rfqs r where r.id=rfq_id and r.buyer_id=(select auth.uid()))
+ and (status='not_selected' or exists(select 1 from public.supplier_quotes q where q.rfq_id=rfq_quote_decisions.rfq_id and q.manufacturer_id=rfq_quote_decisions.manufacturer_id and q.status in ('submitted','updated')))
+);
 create or replace function public.select_rfq_quote(p_rfq_id uuid,p_manufacturer_id text)
-returns void
-language plpgsql
-security invoker
-set search_path=''
+returns void language plpgsql security invoker set search_path=''
 as $$
 begin
  if (select auth.uid()) is null then raise exception 'Sign in required'; end if;
- if not exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer') then
-   raise exception 'A buyer account is required to select a quotation';
- end if;
- if not exists(select 1 from public.rfqs r where r.id=p_rfq_id and r.buyer_id=(select auth.uid())) then
-   raise exception 'RFQ not found for this buyer';
- end if;
- if not exists(select 1 from public.supplier_quotes q where q.rfq_id=p_rfq_id and q.manufacturer_id=p_manufacturer_id and q.status in ('submitted','updated')) then
-   raise exception 'This supplier quotation is no longer available';
- end if;
- update public.rfq_quote_decisions
- set status='not_selected',updated_at=now()
- where rfq_id=p_rfq_id and buyer_id=(select auth.uid()) and status='selected';
- insert into public.rfq_quote_decisions(rfq_id,manufacturer_id,buyer_id,status)
- values(p_rfq_id,p_manufacturer_id,(select auth.uid()),'selected')
- on conflict(rfq_id,manufacturer_id)
- do update set status='selected',updated_at=now()
- where public.rfq_quote_decisions.buyer_id=(select auth.uid());
+ if not exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.account_type='buyer') then raise exception 'A buyer account is required to select a quotation'; end if;
+ if not exists(select 1 from public.rfqs r where r.id=p_rfq_id and r.buyer_id=(select auth.uid())) then raise exception 'RFQ not found for this buyer'; end if;
+ if not exists(select 1 from public.supplier_quotes q where q.rfq_id=p_rfq_id and q.manufacturer_id=p_manufacturer_id and q.status in ('submitted','updated')) then raise exception 'This supplier quotation is no longer available'; end if;
+ update public.rfq_quote_decisions set status='not_selected',updated_at=now() where rfq_id=p_rfq_id and buyer_id=(select auth.uid()) and status='selected';
+ insert into public.rfq_quote_decisions(rfq_id,manufacturer_id,buyer_id,status) values(p_rfq_id,p_manufacturer_id,(select auth.uid()),'selected')
+ on conflict(rfq_id,manufacturer_id) do update set status='selected',updated_at=now() where public.rfq_quote_decisions.buyer_id=(select auth.uid());
 end;
 $$;
 revoke all on function public.select_rfq_quote(uuid,text) from public,anon;
 grant execute on function public.select_rfq_quote(uuid,text) to authenticated;
-
--- A supplier cannot alter a quotation after the buyer has selected it.
 drop policy if exists "Assigned suppliers can update own quotes" on public.supplier_quotes;
-create policy "Assigned suppliers can update own quotes"
- on public.supplier_quotes for update to authenticated
- using (
-   supplier_owner_id=(select auth.uid())
-   and not exists(select 1 from public.rfq_quote_decisions d
-     where d.rfq_id=supplier_quotes.rfq_id
-       and d.manufacturer_id=supplier_quotes.manufacturer_id
-       and d.status='selected')
- )
- with check (
-   supplier_owner_id=(select auth.uid())
-   and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved')
-   and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets)
-   and not exists(select 1 from public.rfq_quote_decisions d
-     where d.rfq_id=supplier_quotes.rfq_id
-       and d.manufacturer_id=supplier_quotes.manufacturer_id
-       and d.status='selected')
- );
-
-
--- Immutable admin review audit trail.
--- Immutable admin audit trail for supplier, product and manufacturer review decisions.
-create table if not exists public.admin_review_events (
- id uuid primary key default gen_random_uuid(),
- entity_type text not null check (entity_type in ('supplier_account','product','manufacturer')),
- entity_id text not null,
- action text not null,
- actor_id uuid references auth.users(id) on delete set null,
- previous_state jsonb not null default '{}'::jsonb,
- new_state jsonb not null default '{}'::jsonb,
- created_at timestamptz not null default now()
+create policy "Assigned suppliers can update own quotes" on public.supplier_quotes for update to authenticated using (
+ supplier_owner_id=(select auth.uid()) and not exists(select 1 from public.rfq_quote_decisions d where d.rfq_id=supplier_quotes.rfq_id and d.manufacturer_id=supplier_quotes.manufacturer_id and d.status='selected')
+) with check (
+ supplier_owner_id=(select auth.uid())
+ and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved')
+ and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets)
+ and not exists(select 1 from public.rfq_quote_decisions d where d.rfq_id=supplier_quotes.rfq_id and d.manufacturer_id=supplier_quotes.manufacturer_id and d.status='selected')
 );
-create index if not exists admin_review_events_entity_idx
- on public.admin_review_events(entity_type,entity_id,created_at desc);
-create index if not exists admin_review_events_actor_idx
- on public.admin_review_events(actor_id,created_at desc);
-alter table public.admin_review_events enable row level security;
-revoke all on public.admin_review_events from anon,authenticated;
-grant select on public.admin_review_events to authenticated;
-drop policy if exists "Admins can read review audit events" on public.admin_review_events;
-create policy "Admins can read review audit events"
- on public.admin_review_events for select to authenticated
- using ((select private.is_factoryscout_admin()));
-
-create or replace function private.audit_factoryscout_review_event()
-returns trigger
-language plpgsql
-security definer
-set search_path=''
-as $$
-declare
- v_old jsonb := '{}'::jsonb;
- v_new jsonb := '{}'::jsonb;
- v_entity_type text;
- v_entity_id text;
- v_action text;
-begin
- if tg_table_name='supplier_accounts' then
-   if old.status is not distinct from new.status and old.manufacturer_id is not distinct from new.manufacturer_id then return new; end if;
-   v_entity_type := 'supplier_account';
-   v_entity_id := new.id::text;
-   v_action := 'supplier_status_changed';
-   v_old := jsonb_build_object('status',old.status,'manufacturer_id',old.manufacturer_id);
-   v_new := jsonb_build_object('status',new.status,'manufacturer_id',new.manufacturer_id);
- elsif tg_table_name='products' then
-   if old.status is not distinct from new.status then return new; end if;
-   v_entity_type := 'product';
-   v_entity_id := new.id::text;
-   v_action := 'product_moderation_changed';
-   v_old := jsonb_build_object('status',old.status,'manufacturer_id',old.manufacturer_id);
-   v_new := jsonb_build_object('status',new.status,'manufacturer_id',new.manufacturer_id);
- elsif tg_table_name='manufacturers' then
-   if old.verification_status is not distinct from new.verification_status
-      and old.is_published is not distinct from new.is_published then return new; end if;
-   v_entity_type := 'manufacturer';
-   v_entity_id := new.id::text;
-   v_action := 'manufacturer_verification_changed';
-   v_old := jsonb_build_object('verification_status',old.verification_status,'is_published',old.is_published);
-   v_new := jsonb_build_object('verification_status',new.verification_status,'is_published',new.is_published);
- else
-   return new;
- end if;
- insert into public.admin_review_events(entity_type,entity_id,action,actor_id,previous_state,new_state)
- values(v_entity_type,v_entity_id,v_action,(select auth.uid()),v_old,v_new);
- return new;
-end;
-$$;
-revoke all on function private.audit_factoryscout_review_event() from public,anon,authenticated;
-
-drop trigger if exists audit_supplier_account_review on public.supplier_accounts;
-create trigger audit_supplier_account_review
- after update on public.supplier_accounts
- for each row execute function private.audit_factoryscout_review_event();
-drop trigger if exists audit_product_moderation on public.products;
-create trigger audit_product_moderation
- after update on public.products
- for each row execute function private.audit_factoryscout_review_event();
-drop trigger if exists audit_manufacturer_verification on public.manufacturers;
-create trigger audit_manufacturer_verification
- after update on public.manufacturers
- for each row execute function private.audit_factoryscout_review_event();
