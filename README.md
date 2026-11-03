@@ -29,10 +29,12 @@ FactoryScout is a pre-launch B2B apparel-manufacturing sourcing marketplace. It 
 - Private RFQ conversations and messaging with buyers.
 
 ### Admin foundation
-- Supplier application review and approval/rejection.
-- Product moderation.
-- Database-backed admin role check.
-- More complete audit history, trust review and operational controls remain launch requirements.
+- Supplier application review, approval/rejection and existing-profile claims.
+- Private buyer-enquiry and RFQ inboxes with status management.
+- Supplier prospect pipeline with official-source links and onboarding statuses.
+- Manufacturer evidence review and product moderation.
+- Audit history for supplier, product, manufacturer, enquiry and RFQ status changes.
+- Admin supplier-quote visibility guarded by an admin-only RLS policy.
 
 ## Architecture
 
@@ -66,7 +68,7 @@ Without Supabase configuration, the public directory falls back to clearly label
 
 ## Database
 
-The live Supabase project already contains the marketplace schema and subsequent migrations. For a fresh project, review and apply the SQL files under `supabase/` in their documented order; do not assume the initial schema file alone represents the current live database.
+The live Supabase project contains the marketplace schema and recorded migrations. For a fresh project, review and apply the SQL files under `supabase/` in version order; do not assume the initial schema file alone represents the current live database. The first owner must create and confirm their Auth account, then run `supabase/bootstrap_first_admin.sql` manually in the Supabase SQL Editor. See [docs/ADMIN_BOOTSTRAP.md](docs/ADMIN_BOOTSTRAP.md).
 
 Core data includes:
 - Manufacturers and products.
@@ -81,7 +83,7 @@ RLS is enabled on the marketplace tables. Before launch, test every read/write p
 
 ## Browser tests
 
-The GitHub Actions workflow installs Playwright and Chromium, then runs the responsive viewport suite:
+The GitHub Actions workflow installs Playwright and Chromium, then runs the responsive and interaction regression suite:
 
 ```bash
 npm install
@@ -90,7 +92,7 @@ npx playwright install chromium
 npx playwright test
 ```
 
-The suite currently covers homepage overflow and visibility at mobile, tablet and desktop widths, mobile navigation, and direct supplier storefront access. Buyer/supplier/admin end-to-end tests are still required.
+The suite covers homepage overflow and visibility at mobile, tablet and desktop widths, mobile navigation, supplier storefront and product detail routes, global material search, product-specific RFQ handoff, RFQ eligibility gating, enquiry routing copy, API security headers and public submission rate limits. Authenticated buyer/supplier/admin end-to-end tests with separate test identities are still required.
 
 ## Deployment
 
@@ -116,4 +118,4 @@ Never invent products, factory photographs, certifications, reviews, capacity, p
 
 ## Pre-launch checklist
 
-The full acceptance plan, technical audit findings and launch gates are maintained in [docs/LAUNCH_READINESS.md](docs/LAUNCH_READINESS.md).
+The full acceptance plan, technical audit findings and launch gates are maintained in [docs/LAUNCH_READINESS.md](docs/LAUNCH_READINESS.md). Supplier prospects are tracked in [docs/SUPPLIER_PIPELINE.md](docs/SUPPLIER_PIPELINE.md); the verification and contact workflow is in [docs/SUPPLIER_ONBOARDING_PLAYBOOK.md](docs/SUPPLIER_ONBOARDING_PLAYBOOK.md).
