@@ -51,14 +51,14 @@ export default function AccountPortal() {
       supabase.from("profiles").select("id,email,full_name,account_type,role").eq("id",current.id).maybeSingle(),
       supabase.from("supplier_accounts").select("*").eq("owner_id",current.id).maybeSingle(),
       supabase.from("saved_manufacturers").select("manufacturer_id,manufacturers(name,region)").eq("user_id",current.id).order("created_at",{ascending:false}),
-      supabase.from("manufacturers").select("id,name,region,supplier_accounts!supplier_accounts_manufacturer_id_fkey(status)").eq("is_published",true).order("name",{ascending:true})
+      supabase.from("manufacturers").select("id,name,region,supplier_accounts!supplier_accounts_manufacturer_id_fkey(status),supplier_claims:supplier_accounts!supplier_accounts_requested_manufacturer_id_fkey(status)").eq("is_published",true).order("name",{ascending:true})
     ]);
     if (p.error) setMessage("Your account profile could not be loaded. Please refresh.");
     else setProfile(p.data as Profile|null);
     if (s.error && s.error.code !== "PGRST116") setMessage("Supplier workspace could not be loaded.");
     else setSupplier(s.data as SupplierAccount|null);
     if (!saved.error) setSavedManufacturers(saved.data || []);
-    if (!claimables.error) setClaimableManufacturers((claimables.data || []).filter((m:any)=>{const accounts=Array.isArray(m.supplier_accounts)?m.supplier_accounts:m.supplier_accounts?[m.supplier_accounts]:[];return !accounts.some((sa:any)=>sa.status==="approved");}));
+    if (!claimables.error) setClaimableManufacturers((claimables.data || []).filter((m:any)=>{const accounts=Array.isArray(m.supplier_accounts)?m.supplier_accounts:m.supplier_accounts?[m.supplier_accounts]:[];const claims=Array.isArray(m.supplier_claims)?m.supplier_claims:m.supplier_claims?[m.supplier_claims]:[];return !accounts.some((sa:any)=>sa.status==="approved")&&!claims.some((sa:any)=>sa.status==="pending");}));
     if (p.data?.account_type === "buyer") {
       const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,rfq_targets(manufacturers(name)),unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,valid_until,created_at),rfq_quote_decisions(manufacturer_id,status)").eq("buyer_id",current.id).order("created_at",{ascending:false});
       if (!error) setBuyerRfqs(data || []);
