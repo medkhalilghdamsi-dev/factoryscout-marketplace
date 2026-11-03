@@ -377,3 +377,23 @@ using (
     where sa.owner_id = (select auth.uid()) and sa.status = 'approved'
   )
 );
+
+
+-- Buyer saved supplier shortlist. Each authenticated user can manage only their own rows.
+create table if not exists public.saved_manufacturers (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  manufacturer_id text not null references public.manufacturers(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, manufacturer_id)
+);
+alter table public.saved_manufacturers enable row level security;
+grant select, insert, delete on public.saved_manufacturers to authenticated;
+grant select on public.manufacturers to authenticated;
+drop policy if exists "Users can read their own saved manufacturers" on public.saved_manufacturers;
+create policy "Users can read their own saved manufacturers" on public.saved_manufacturers for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists "Users can save manufacturers to their own list" on public.saved_manufacturers;
+create policy "Users can save manufacturers to their own list" on public.saved_manufacturers for insert to authenticated with check ((select auth.uid()) = user_id);
+drop policy if exists "Users can remove manufacturers from their own list" on public.saved_manufacturers;
+create policy "Users can remove manufacturers from their own list" on public.saved_manufacturers for delete to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists "Authenticated users can view published manufacturers" on public.manufacturers;
+create policy "Authenticated users can view published manufacturers" on public.manufacturers for select to authenticated using (is_published = true);
