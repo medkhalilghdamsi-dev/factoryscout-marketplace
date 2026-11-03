@@ -221,3 +221,24 @@ test("RFQ form blocks manufacturers without approved supplier accounts", async (
   await expect(page.locator(".rfq-suppliers input[type='checkbox']")).toBeDisabled();
   await expect(page.getByRole("button", { name: /Send RFQ to/ })).toBeDisabled();
 });
+
+
+test("API responses include baseline browser security headers", async ({ request }) => {
+  const response = await request.get("/api/health");
+  expect(response.ok()).toBeTruthy();
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+  expect(response.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(response.headers()["permissions-policy"]).toContain("camera=()");
+  expect(response.headers()["x-powered-by"]).toBeUndefined();
+});
+
+test("public enquiry endpoint rate-limits repeated submissions from one client", async ({ request }) => {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const response = await request.post("/api/enquiries", { data: {} });
+    expect(response.status(), `attempt ${attempt + 1}`).toBe(400);
+  }
+  const limited = await request.post("/api/enquiries", { data: {} });
+  expect(limited.status()).toBe(429);
+  expect(Number(limited.headers()["retry-after"])).toBeGreaterThan(0);
+});
