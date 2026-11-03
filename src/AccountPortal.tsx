@@ -208,7 +208,7 @@ export default function AccountPortal() {
       sample_available:draft.sample_available, notes:draft.notes.trim(), status:"submitted", updated_at:new Date().toISOString()
     },{onConflict:"rfq_id,manufacturer_id"});
     if (error) setMessage("Quote could not be submitted: "+error.message);
-    else setMessage("Your quotation has been sent to the buyer.");
+    else { setMessage("Your quotation has been sent to the buyer."); await loadAccount(user); }
     setBusy(false);
   };
 
