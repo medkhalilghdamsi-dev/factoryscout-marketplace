@@ -422,7 +422,7 @@ create index if not exists rfq_conversations_buyer_idx on public.rfq_conversatio
 create index if not exists rfq_conversations_supplier_idx on public.rfq_conversations(supplier_owner_id,updated_at desc);
 alter table public.rfq_conversations enable row level security;
 revoke all on public.rfq_conversations from anon,authenticated;
-grant select,insert,update on public.rfq_conversations to authenticated;
+grant select,insert on public.rfq_conversations to authenticated;
 drop policy if exists "RFQ participants can read conversations" on public.rfq_conversations;
 create policy "RFQ participants can read conversations" on public.rfq_conversations for select to authenticated using ((select auth.uid())=buyer_id or (select auth.uid())=supplier_owner_id);
 drop policy if exists "RFQ participants can open conversations" on public.rfq_conversations;
@@ -444,7 +444,9 @@ create index if not exists rfq_messages_sender_idx on public.rfq_messages(sender
 create index if not exists rfq_messages_unread_idx on public.rfq_messages(conversation_id,read_at,sender_id);
 alter table public.rfq_messages enable row level security;
 revoke all on public.rfq_messages from anon,authenticated;
-grant select,insert,update on public.rfq_messages to authenticated;
+grant select on public.rfq_messages to authenticated;
+grant insert (conversation_id,sender_id,body) on public.rfq_messages to authenticated;
+grant update (read_at) on public.rfq_messages to authenticated;
 drop policy if exists "Conversation participants can read messages" on public.rfq_messages;
 create policy "Conversation participants can read messages" on public.rfq_messages for select to authenticated using (exists(select 1 from public.rfq_conversations c where c.id=conversation_id and ((select auth.uid())=c.buyer_id or (select auth.uid())=c.supplier_owner_id)));
 drop policy if exists "Participants can send messages" on public.rfq_messages;
