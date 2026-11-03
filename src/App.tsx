@@ -64,7 +64,7 @@ export default function App() {
     return haystack.includes(productQuery.trim().toLowerCase()) && (productCategory==="All products" || p.product_type===productCategory) && (!samplesOnly || p.sample_available);
   }).sort((a,b)=>productSort==="name"?a.name.localeCompare(b.name):productSort==="moq"?(a.minimum_order??Number.MAX_SAFE_INTEGER)-(b.minimum_order??Number.MAX_SAFE_INTEGER):0),[products,productQuery,productCategory,productSort,samplesOnly]);
   useEffect(()=>{
-    const syncRoute=()=>setStorefrontId(window.location.pathname.match(/^\/suppliers\/([^/]+)\/?$/)?.[1] ?? null);
+    const syncRoute=()=>{const id=window.location.pathname.match(/^\/suppliers\/([^/]+)\/?$/)?.[1] ?? null;setStorefrontId(id);if(!id){setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";}};
     window.addEventListener("popstate",syncRoute);
     return ()=>window.removeEventListener("popstate",syncRoute);
   },[]);
@@ -74,8 +74,8 @@ export default function App() {
     if(match)setSelected(match);
     document.title=match?`${match.name} | FactoryScout`:"Supplier storefront | FactoryScout";
   },[storefrontId,items]);
-  const openStorefront=(m:Manufacturer)=>{window.history.pushState({}, "", `/suppliers/${encodeURIComponent(m.id)}`);setStorefrontId(m.id);setSelected(m);window.scrollTo({top:0,behavior:"instant" as ScrollBehavior});};
-  const closeStorefront=()=>{window.history.pushState({}, "", "/");setStorefrontId(null);setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo({top:0,behavior:"instant" as ScrollBehavior});};
+  const openStorefront=(m:Manufacturer)=>{window.history.pushState({}, "", `/suppliers/${encodeURIComponent(m.id)}`);setStorefrontId(m.id);setSelected(m);window.scrollTo(0,0);};
+  const closeStorefront=()=>{window.history.pushState({}, "", "/");setStorefrontId(null);setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
   const toggleCompare=(id:string)=>setCompareIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):ids.length<3?[...ids,id]:ids);
   const toggleSaved=async(id:string)=>{
     const removing=savedIds.includes(id);
