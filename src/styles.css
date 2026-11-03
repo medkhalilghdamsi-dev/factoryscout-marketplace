@@ -760,3 +760,10 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
 .quote-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .quote-actions .quote-withdraw-button{background:#fff;border:1px solid #c7cbc5;color:#5b625d;padding:8px 12px;border-radius:6px;font-size:12px}
 .quote-actions .quote-withdraw-button:hover:not(:disabled){background:#f7f2f0;border-color:#b6a19a;color:#7c4031}
+
+.admin-audit-list{display:grid;gap:9px;margin-top:12px}
+.admin-audit-item{display:grid;gap:5px;padding:12px;border:1px solid #e2e5df;border-radius:8px;background:#fafbf9}
+.admin-audit-item>div{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.admin-audit-item b{font-size:12px;text-transform:capitalize;color:#263b2e}
+.admin-audit-item span,.admin-audit-item time,.admin-audit-item small{font-size:11px;color:#69736b;overflow-wrap:anywhere}
+.admin-audit-item small{line-height:1.5}
