@@ -18,12 +18,13 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 
 ## Audit findings to resolve before launch
 
-1. **Public submission abuse controls need hardening.** Live RLS policies allow narrowly scoped anonymous inserts for enquiries and supplier applications. The public `submit_rfq` RPC is also executable by `anon`, so a caller can invoke it directly through PostgREST and bypass the Express API's in-memory per-IP rate limiter and honeypot. Before launch, move public submissions behind a server-only credential with shared rate limiting and bot protection, or require verified buyer accounts; then revoke direct anonymous RPC execution and test all public write grants. Do not put a service-role key in browser code.
-2. **Configuration documentation is inconsistent.** `.env.example` documents `SUPABASE_SERVICE_ROLE_KEY`, while `server.ts` currently reads `SUPABASE_ANON_KEY`; `render.yaml` defines `SUPABASE_ANON_KEY` and browser publishable-key variables. Establish one explicit least-privilege configuration contract; never expose a service-role secret to the browser.
-3. **README is behind the current product.** It describes the earlier directory/enquiry MVP and does not document the buyer/supplier portal, products, RFQs, quotations, messaging, moderation, or current deployment setup.
-4. **Messaging is not launch-proven.** Live tables exist for RFQ conversations/messages, but their complete schema, RLS, realtime behavior, unread state and UI flows must be tested.
-5. **Supplier trust is not launch-ready.** Four existing records are unverified, have no website value in the database, and should not be represented as independently verified. Confirm legal identity, working website/contact, facility, product capabilities, MOQ, capacity, lead times, sample process, export experience and certification evidence. Record source, reviewer, date and scope.
-6. **Free hosting is a constraint.** Validate cold starts, sleeping behavior, database limits, storage, backups, rate limiting, abuse protection and recovery before choosing the public launch configuration.
+1. **RFQ submission security has been hardened.** Anonymous execution of the legacy `submit_rfq` RPC and anonymous inserts into `rfqs`/`rfq_targets` are revoked. The authenticated `submit_rfq_for_buyer` RPC validates request fields, requires a buyer account, validates published supplier targets, and creates RFQ targets/conversations atomically. Live privilege checks confirm anonymous users cannot execute either RFQ RPC or insert into RFQ tables; authenticated users can execute the buyer RPC.
+2. **Public enquiry and supplier-application abuse controls remain open.** These routes still accept anonymous submissions under narrowly scoped RLS policies and currently rely on an in-memory Express rate limiter. Add shared rate limiting, bot protection, validation, and operational monitoring before launch.
+3. **Configuration example is aligned.** `.env.example` now documents the server-side `SUPABASE_ANON_KEY` used by `server.ts`; the browser uses only the Vite publishable key. Both remain subject to RLS. Never expose a service-role secret to the browser.
+4. **README has been updated** to describe the buyer/supplier portal, product catalogue, RFQs, quotations, messaging, moderation and deployment setup.
+5. **Messaging is implemented but not launch-proven.** Buyer/supplier inboxes now show supplier names, support sending and manual refresh, and attempt read-receipt updates. Database participant policies exist. Realtime behavior, read-receipt persistence, unread indicators and full two-account E2E flows still need tests.
+6. **Supplier trust is not launch-ready.** Four existing records are unverified, have no website value in the database, and should not be represented as independently verified. Confirm legal identity, working website/contact, facility, product capabilities, MOQ, capacity, lead times, sample process, export experience and certification evidence. Record source, reviewer, date and scope.
+7. **Free hosting is a constraint.** Validate cold starts, sleeping behavior, database limits, storage, backups, abuse protection and recovery before choosing the public launch configuration.
 
 ## Workstreams and acceptance gates
 
@@ -41,7 +42,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Signup, email confirmation, sign-in, sign-out, password reset and session expiry.
 - [ ] Buyer profile and company details.
 - [ ] Save/unsave suppliers and view shortlist.
-- [ ] Submit RFQ to 1–5 selected eligible manufacturers with validated quantity/specifications/destination/date.
+- [x] Anonymous RFQ RPC execution and anonymous RFQ table inserts revoked; live privilege checks passed.\n- [ ] Submit RFQ to 1–5 selected eligible manufacturers with validated quantity/specifications/destination/date using buyer and supplier test identities.
 - [ ] Buyer dashboard shows RFQ status, targeted suppliers and received quotations.
 - [ ] Buyer can compare quotes and communicate with suppliers.
 - [ ] Privacy notice, consent/retention explanation and account deletion/contact process.
@@ -66,7 +67,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Validate quote currency, positive price, MOQ, lead time, validity date, status transitions and input limits.
 - [x] Buyer/supplier conversation panel, message persistence UI, manual refresh and read-receipt update UI implemented (not yet E2E verified).\n- [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh verified with separate test identities.
 - [ ] Email notifications for signup, supplier approval, new RFQ, new quote and new message (with retries and opt-out).
-- [ ] Abuse controls: server-side rate limits in shared storage, honeypot/bot protection, request validation and audit trail. The current in-memory Express limiter is bypassable for direct anonymous RPC calls.
+- [ ] Abuse controls: shared server-side rate limits, bot protection, request validation and audit trail for public enquiry and supplier-application endpoints. RFQ submission now requires an authenticated buyer. The current in-memory Express limiter is bypassable for direct anonymous RPC calls.
 
 **Pass condition:** A complete buyer-to-multiple-supplier-to-quote-to-message workflow passes with at least two supplier test accounts.
 
