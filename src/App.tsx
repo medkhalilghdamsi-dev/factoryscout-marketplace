@@ -32,7 +32,7 @@ const regionMatch = (r:string, filter:string) => filter==="All locations" || (fi
 export default function App() {
   const [items,setItems] = useState<Manufacturer[]>(seed); const [products,setProducts] = useState<Product[]>([]);
   const [query,setQuery] = useState(""); const [category,setCategory] = useState(categories[0]); const [region,setRegion] = useState(regions[0]);
-  const [selected,setSelected] = useState<Manufacturer|null>(null); const [storefrontId,setStorefrontId] = useState<string|null>(()=>window.location.pathname.match(/^\/suppliers\/([^/]+)\/?$/)?.[1] ?? null); const [showForm,setShowForm] = useState(false);
+  const [selected,setSelected] = useState<Manufacturer|null>(null); const [storefrontId,setStorefrontId] = useState<string|null>(()=>window.location.pathname.match(/^\/suppliers\/([^/]+)\/?$/)?.[1] ?? null); const [productId,setProductId] = useState<string|null>(()=>window.location.pathname.match(/^\/products\/([^/]+)\/?$/)?.[1] ?? null); const [productsLoaded,setProductsLoaded] = useState(false); const [showForm,setShowForm] = useState(false);
   const [notice,setNotice] = useState(""); const [mobileMenu,setMobileMenu] = useState(false);
   const [showSupplierForm,setShowSupplierForm] = useState(false); const [showRfqForm,setShowRfqForm] = useState(false); const [rfqNotice,setRfqNotice] = useState("");
   const [rfq,setRfq] = useState<RFQ>({name:"",email:"",company:"",productType:"",quantity:"",targetPrice:"",deliveryCountry:"",materialSpecs:"",sampleRequired:false,targetDate:"",manufacturerIds:[],honeypot:""});
@@ -53,7 +53,7 @@ export default function App() {
     const {data:{subscription}}=client.auth.onAuthStateChange((_event,session)=>{void loadSaved(session?.user.id);});
     return ()=>{active=false;subscription.unsubscribe();};
   },[]);
-  useEffect(()=>{fetch("/api/manufacturers").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d)&&d.length)setItems(d)}).catch(()=>{});fetch("/api/products").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d))setProducts(d)}).catch(()=>{});},[]);
+  useEffect(()=>{fetch("/api/manufacturers").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d)&&d.length)setItems(d)}).catch(()=>{});fetch("/api/products").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d))setProducts(d)}).catch(()=>{}).finally(()=>setProductsLoaded(true));},[]);
   const filtered = useMemo(()=>items.filter(m=>{
     const text=[m.name,m.region,m.summary,...m.category,...m.capabilities].join(" ").toLowerCase();
     return text.includes(query.toLowerCase()) && (category===categories[0] || m.category.some(c=>c.toLowerCase().includes(category.toLowerCase())) || m.capabilities.some(c=>c.toLowerCase().includes(category.toLowerCase()))) && regionMatch(m.region,region);
@@ -65,7 +65,14 @@ export default function App() {
     return haystack.includes(productQuery.trim().toLowerCase()) && (productCategory==="All products" || p.product_type===productCategory) && (!samplesOnly || p.sample_available);
   }).sort((a,b)=>productSort==="name"?a.name.localeCompare(b.name):productSort==="moq"?(a.minimum_order??Number.MAX_SAFE_INTEGER)-(b.minimum_order??Number.MAX_SAFE_INTEGER):0),[products,productQuery,productCategory,productSort,samplesOnly]);
   useEffect(()=>{
-    const syncRoute=()=>{const id=window.location.pathname.match(/^\/suppliers\/([^/]+)\/?$/)?.[1] ?? null;setStorefrontId(id);if(!id){setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";}};
+    const syncRoute=()=>{
+      const path=window.location.pathname;
+      const supplier=path.match(/^\/suppliers\/([^/]+)\/?$/)?.[1] ?? null;
+      const product=path.match(/^\/products\/([^/]+)\/?$/)?.[1] ?? null;
+      setStorefrontId(supplier);setProductId(product);
+      if(!supplier)setSelected(null);
+      if(!supplier&&!product)document.title="FactoryScout — Global apparel sourcing, made clearer";
+    };
     window.addEventListener("popstate",syncRoute);
     return ()=>window.removeEventListener("popstate",syncRoute);
   },[]);
@@ -73,10 +80,17 @@ export default function App() {
     if(!storefrontId)return;
     const match=items.find(m=>m.id===decodeURIComponent(storefrontId));
     if(match)setSelected(match);
-    document.title=match?`${match.name} | FactoryScout`:"Supplier storefront | FactoryScout";
+    document.title=match?match.name+" | FactoryScout":"Supplier storefront | FactoryScout";
   },[storefrontId,items]);
-  const openStorefront=(m:Manufacturer)=>{window.history.pushState({}, "", `/suppliers/${encodeURIComponent(m.id)}`);setStorefrontId(m.id);setSelected(m);window.scrollTo(0,0);};
-  const closeStorefront=()=>{window.history.pushState({}, "", "/");setStorefrontId(null);setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
+  useEffect(()=>{
+    if(!productId)return;
+    const match=products.find(p=>p.id===decodeURIComponent(productId));
+    document.title=match?match.name+" | FactoryScout":"Product details | FactoryScout";
+  },[productId,products]);
+  const openStorefront=(m:Manufacturer)=>{window.history.pushState({}, "", "/suppliers/"+encodeURIComponent(m.id));setStorefrontId(m.id);setProductId(null);setSelected(m);window.scrollTo(0,0);};
+  const closeStorefront=()=>{window.history.pushState({}, "", "/");setStorefrontId(null);setProductId(null);setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
+  const openProduct=(p:Product)=>{window.history.pushState({}, "", "/products/"+encodeURIComponent(p.id));setStorefrontId(null);setSelected(null);setProductId(p.id);window.scrollTo(0,0);};
+  const closeProduct=()=>{window.history.pushState({}, "", "/");setProductId(null);setStorefrontId(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
   const toggleCompare=(id:string)=>setCompareIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):ids.length<3?[...ids,id]:ids);
   const toggleSaved=async(id:string)=>{
     const removing=savedIds.includes(id);
@@ -95,6 +109,34 @@ export default function App() {
   const submit=async(e:React.FormEvent)=>{e.preventDefault();try{const r=await fetch("/api/enquiries",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"The enquiry service is unavailable.");setNotice("Your enquiry has been securely submitted.");setShowForm(false);setForm({manufacturerId:"",name:"",email:"",company:"",product:"",quantity:"",details:""});}catch(error){setNotice(error instanceof Error?error.message:"We could not submit your enquiry. Please try again.");}};
   const submitRFQ=async(e:React.FormEvent)=>{e.preventDefault();try{if(!supabase)throw new Error("Buyer accounts are temporarily unavailable. Please try again later.");const {data:{session}}=await supabase.auth.getSession();if(!session?.user){setShowRfqForm(false);setRfqNotice("Sign in or create a buyer account first. Your RFQ draft is saved here—reopen it after signing in.");return;}const {error}=await supabase.rpc("submit_rfq_for_buyer",{p_buyer_name:rfq.name,p_buyer_email:session.user.email||rfq.email,p_company:rfq.company,p_product_type:rfq.productType,p_quantity:Number(rfq.quantity),p_target_price:rfq.targetPrice,p_delivery_country:rfq.deliveryCountry,p_material_specs:rfq.materialSpecs,p_sample_required:rfq.sampleRequired,p_target_date:rfq.targetDate||null,p_manufacturer_ids:rfq.manufacturerIds});if(error)throw error;setRfqNotice("Your RFQ has been submitted. Track supplier responses and quotations in your buyer workspace.");setShowRfqForm(false);setRfq({name:"",email:"",company:"",productType:"",quantity:"",targetPrice:"",deliveryCountry:"",materialSpecs:"",sampleRequired:false,targetDate:"",manufacturerIds:[],honeypot:""});}catch(error){setRfqNotice(error instanceof Error?error.message:"RFQ submission failed. Please try again.");}};
   const submitSupplier=async(e:React.FormEvent)=>{e.preventDefault();try{const r=await fetch("/api/supplier-applications",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(supplierForm)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"The listing service is unavailable.");setNotice(data.message||"Your listing request has been submitted for review.");setShowSupplierForm(false);setSupplierForm({company:"",website:"",location:"",products:"",moq:"",leadTime:"",evidence:"",contactPage:"",contactName:"",honeypot:""});}catch(error){setNotice(error instanceof Error?error.message:"We could not submit your listing request. Please try again.");}};
+  if(productId){
+    const product=products.find(p=>p.id===decodeURIComponent(productId));
+    if(!productsLoaded)return <main className="product-detail-page"><header className="storefront-nav"><a className="brand" href="/" onClick={e=>{e.preventDefault();closeProduct();}}><span className="brand-mark">F</span><span>Factory<span className="brand-light">Scout</span></span></a></header><section className="product-detail-empty"><span className="eyebrow dark">PRODUCT CATALOGUE</span><h1>Loading <em>product details.</em></h1></section></main>;
+    if(!product)return <main className="product-detail-page"><header className="storefront-nav"><a className="brand" href="/" onClick={e=>{e.preventDefault();closeProduct();}}><span className="brand-mark">F</span><span>Factory<span className="brand-light">Scout</span></span></a><button onClick={closeProduct}>← Back to catalogue</button></header><section className="product-detail-empty"><span className="eyebrow dark">PRODUCT NOT AVAILABLE</span><h1>This listing <em>isn't available.</em></h1><p>The product may have been withdrawn or is no longer published.</p><button className="button primary" onClick={closeProduct}>Explore products ↗</button></section></main>;
+    return <main className="product-detail-page">
+      <header className="storefront-nav"><a className="brand" href="/" onClick={e=>{e.preventDefault();closeProduct();}}><span className="brand-mark">F</span><span>Factory<span className="brand-light">Scout</span></span></a><nav><button onClick={closeProduct}>← Product catalogue</button><button className="nav-cta" onClick={()=>{const p=product;closeProduct();setRfq(r=>({...r,productType:p.product_type,manufacturerIds:[p.manufacturer_id],materialSpecs:[p.name,...(p.materials||[]),...(p.techniques||[])].join(", ")}));setShowRfqForm(true);}}>Request this product ↗</button></nav></header>
+      <div className="product-detail-breadcrumb"><button onClick={closeProduct}>Products</button><span>/</span><span>{product.product_type}</span><span>/</span><b>{product.name}</b></div>
+      <section className="product-detail-layout">
+        <div className="product-detail-visual">{product.image_url?<img src={product.image_url} alt={product.name}/>:<div className="product-detail-placeholder"><span>FACTORYSCOUT / PRODUCT</span><b>{product.product_type.toUpperCase()}</b></div>}</div>
+        <div className="product-detail-information">
+          <span className="eyebrow dark">SUPPLIER-PUBLISHED PRODUCT · {product.evidence}</span>
+          <h1>{product.name}</h1>
+          <button className="product-detail-supplier" onClick={()=>{const m=items.find(item=>item.id===product.manufacturer_id);if(m)openStorefront(m);else closeProduct();}}>{product.manufacturers?.name||"FactoryScout supplier"}{product.manufacturers?.region?" · "+product.manufacturers.region:""} ↗</button>
+          <p className="product-detail-description">{product.description||"Contact the supplier for product specifications."}</p>
+          <div className="product-detail-facts">
+            <div><small>MINIMUM ORDER</small><b>{product.minimum_order?Number(product.minimum_order).toLocaleString()+" pieces":"Confirm with supplier"}</b></div>
+            <div><small>SAMPLE AVAILABILITY</small><b>{product.sample_available?"Available (supplier-stated)":"Confirm with supplier"}</b></div>
+            <div><small>LEAD TIME</small><b>{product.lead_time_days?product.lead_time_days+" days (supplier-stated)":"Confirm with supplier"}</b></div>
+            <div><small>LISTING EVIDENCE</small><b>{product.evidence||"Supplier-submitted"}</b></div>
+          </div>
+          <div className="product-detail-tags"><span>MATERIALS</span><div className="tag-list">{(product.materials||[]).length?product.materials.map(x=><span key={x}>{x}</span>):<small>Not specified</small>}</div></div>
+          <div className="product-detail-tags"><span>TECHNIQUES</span><div className="tag-list">{(product.techniques||[]).length?product.techniques.map(x=><span key={x}>{x}</span>):<small>Not specified</small>}</div></div>
+          <button className="button primary product-detail-cta" onClick={()=>{const p=product;closeProduct();setRfq(r=>({...r,productType:p.product_type,manufacturerIds:[p.manufacturer_id],materialSpecs:[p.name,...(p.materials||[]),...(p.techniques||[])].join(", ")}));setShowRfqForm(true);}}>Request a quotation ↗</button>
+          <p className="product-detail-disclaimer">Product details are supplier-submitted and may require confirmation. FactoryScout does not represent this listing as an independent product or factory audit.</p>
+        </div>
+      </section>
+    </main>;
+  }
   if(storefrontId){
     if(!selected)return <main className="storefront-page"><header className="storefront-nav"><a className="brand" href="/" onClick={e=>{e.preventDefault();closeStorefront();}}><span className="brand-mark">F</span><span>Factory<span className="brand-light">Scout</span></span></a><a href="/" onClick={e=>{e.preventDefault();closeStorefront();}}>← Back to suppliers</a></header><section className="storefront-not-found"><span className="eyebrow dark">SUPPLIER STOREFRONT</span><h1>This supplier page<br/><em>isn't available.</em></h1><p>The profile may have changed or is no longer published.</p><button className="button primary" onClick={closeStorefront}>Explore suppliers ↗</button></section></main>;
     const supplierProducts=products.filter(p=>p.manufacturer_id===selected.id);
@@ -192,7 +234,7 @@ export default function App() {
                       <span>Sample <b>{p.sample_available?"Available":"Confirm"}</b></span>
                       <span>Lead time <b>{p.lead_time_days?`${p.lead_time_days} days`:"Confirm"}</b></span>
                     </div>
-                    <button className="text-button" onClick={()=>{setRfq(r=>({...r,productType:p.product_type,manufacturerIds:[p.manufacturer_id]}));setShowRfqForm(true);}}>Request this product ↗</button>
+                    <div className="product-card-actions"><button className="text-button" onClick={()=>openProduct(p)}>View product details ↗</button><button className="text-button" onClick={()=>{setRfq(r=>({...r,productType:p.product_type,manufacturerIds:[p.manufacturer_id],materialSpecs:[p.name,...(p.materials||[]),...(p.techniques||[])].join(", ")}));setShowRfqForm(true);}}>Request this product ↗</button></div>
                   </div>
                 </article>
               ))}
