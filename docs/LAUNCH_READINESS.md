@@ -42,7 +42,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Signup, email confirmation, sign-in, sign-out, password reset and session expiry.
 - [ ] Buyer profile and company details.
 - [ ] Save/unsave suppliers and view shortlist.
-- [x] Anonymous RFQ RPC execution and anonymous RFQ table inserts revoked; live privilege checks passed.\n- [ ] Submit RFQ to 1–5 selected eligible manufacturers with validated quantity/specifications/destination/date using buyer and supplier test identities.
+- [x] Anonymous RFQ RPC execution and anonymous RFQ table inserts revoked; live privilege checks passed.
+- [ ] Submit RFQ to 1–5 selected eligible manufacturers with validated quantity/specifications/destination/date using buyer and supplier test identities.
 - [ ] Buyer dashboard shows RFQ status, targeted suppliers and received quotations.
 - [ ] Buyer can compare quotes and communicate with suppliers.
 - [ ] Privacy notice, consent/retention explanation and account deletion/contact process.
@@ -65,7 +66,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Enforce published/eligible supplier selection and prevent duplicate targets.
 - [ ] Enforce buyer ownership, assigned-supplier access and quote uniqueness at database level.
 - [ ] Validate quote currency, positive price, MOQ, lead time, validity date, status transitions and input limits.
-- [x] Buyer/supplier conversation panel, message persistence UI, manual refresh and read-receipt update UI implemented (not yet E2E verified).\n- [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh verified with separate test identities.
+- [x] Buyer/supplier conversation panel, message persistence UI, manual refresh and read-receipt update UI implemented (not yet E2E verified).
+- [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh verified with separate test identities.
 - [ ] Email notifications for signup, supplier approval, new RFQ, new quote and new message (with retries and opt-out).
 - [ ] Abuse controls: shared server-side rate limits, bot protection, request validation and audit trail for public enquiry and supplier-application endpoints. RFQ submission now requires an authenticated buyer. The current in-memory Express limiter is bypassable for direct anonymous RPC calls.
 
