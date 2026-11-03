@@ -514,6 +514,8 @@ drop policy if exists "Quote owners can read their quotes" on public.supplier_qu
 create policy "Quote owners can read their quotes" on public.supplier_quotes for select to authenticated using(supplier_owner_id=(select auth.uid()));
 drop policy if exists "Buyers can read own RFQ quotes" on public.supplier_quotes;
 create policy "Buyers can read own RFQ quotes" on public.supplier_quotes for select to authenticated using(rfq_id in(select id from public.rfqs where buyer_id=(select auth.uid())));
+drop policy if exists "Admins can review all supplier quotes" on public.supplier_quotes;
+create policy "Admins can review all supplier quotes" on public.supplier_quotes for select to authenticated using ((select private.is_factoryscout_admin()));
 drop policy if exists "Only assigned supplier can submit quote" on public.supplier_quotes;
 create policy "Only assigned supplier can submit quote" on public.supplier_quotes for insert to authenticated with check(supplier_owner_id=(select auth.uid()) and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets) and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved'));
 
