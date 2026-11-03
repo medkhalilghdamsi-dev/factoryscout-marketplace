@@ -1,5 +1,4 @@
 import express, { type Request, type Response, type NextFunction } from "express";
-import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer as createViteServer } from "vite";
@@ -107,15 +106,20 @@ app.post("/api/rfqs", rateLimit, async (req, res) => {
   if (targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) return res.status(400).json({ error: "Please use a valid target date." });
   if (!databaseReady) return res.status(503).json({ error: "The RFQ service is not configured yet. Your details have not been stored." });
   try {
-    for (const id of ids) {
-      const found = await supabase("manufacturers", { query: `select=id&id=eq.${encodeURIComponent(id)}&is_published=eq.true` });
-      if (!Array.isArray(found) || found.length === 0) return res.status(400).json({ error: "One selected supplier is not currently published. Refresh and try again." });
+    await supabase("rpc/submit_rfq", { method: "POST", body: {
+      p_buyer_name: name.trim(), p_buyer_email: email.trim(), p_company: String(company || "").trim(),
+      p_product_type: productType.trim(), p_quantity: qty, p_target_price: String(targetPrice || "").trim(),
+      p_delivery_country: deliveryCountry.trim(), p_material_specs: String(materialSpecs || "").trim(),
+      p_sample_required: sampleRequired, p_target_date: targetDate || null, p_manufacturer_ids: ids
+    } });
+    return res.status(201).json({ ok: true, supplierCount: ids.length });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Invalid RFQ fields") || message.includes("not published")) {
+      return res.status(400).json({ error: "Please review the RFQ details and selected suppliers." });
     }
-    const id = randomUUID();
-    await supabase("rfqs", { method: "POST", body: { id, buyer_name: name.trim(), buyer_email: email.trim(), company: String(company || "").trim(), product_type: productType.trim(), quantity: qty, target_price: String(targetPrice || "").trim(), delivery_country: deliveryCountry.trim(), material_specs: String(materialSpecs || "").trim(), sample_required: sampleRequired, target_date: targetDate || null } });
-    await supabase("rfq_targets", { method: "POST", body: ids.map(manufacturer_id => ({ rfq_id: id, manufacturer_id })) });
-    return res.status(201).json({ ok: true, id, supplierCount: ids.length });
-  } catch { return res.status(503).json({ error: "We could not save the RFQ. Please try again later." }); }
+    return res.status(503).json({ error: "We could not save the RFQ. Please try again later." });
+  }
 });
 app.post("/api/supplier-applications", rateLimit, async (req, res) => {
   const { company, website, location, products, moq, leadTime, evidence, contactPage, contactName, honeypot } = req.body ?? {};
