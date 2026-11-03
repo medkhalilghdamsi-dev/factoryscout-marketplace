@@ -209,11 +209,11 @@ create policy "Approved supplier storefronts are public" on public.supplier_acco
  for select to anon, authenticated using (status = 'approved');
 drop policy if exists "Users can submit a pending supplier account" on public.supplier_accounts;
 create policy "Users can submit a pending supplier account" on public.supplier_accounts
- for insert to authenticated with check ((select auth.uid()) = owner_id and status = 'pending' and manufacturer_id is null and (requested_manufacturer_id is null or (exists(select 1 from public.manufacturers m where m.id=requested_manufacturer_id and m.is_published=true) and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=requested_manufacturer_id and sa.status='approved'))));
+ for insert to authenticated with check ((select auth.uid()) = owner_id and status = 'pending' and manufacturer_id is null and (requested_manufacturer_id is null or (exists(select 1 from public.manufacturers m where m.id=supplier_accounts.requested_manufacturer_id and m.is_published=true) and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=supplier_accounts.requested_manufacturer_id and sa.status='approved'))));
 drop policy if exists "Owners can edit pending supplier details" on public.supplier_accounts;
 create policy "Owners can edit pending supplier details" on public.supplier_accounts
  for update to authenticated using ((select auth.uid()) = owner_id and status = 'pending')
- with check ((select auth.uid()) = owner_id and status = 'pending' and manufacturer_id is null and (requested_manufacturer_id is null or (exists(select 1 from public.manufacturers m where m.id=requested_manufacturer_id and m.is_published=true) and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=requested_manufacturer_id and sa.status='approved'))));
+ with check ((select auth.uid()) = owner_id and status = 'pending' and manufacturer_id is null and (requested_manufacturer_id is null or (exists(select 1 from public.manufacturers m where m.id=supplier_accounts.requested_manufacturer_id and m.is_published=true) and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=supplier_accounts.requested_manufacturer_id and sa.status='approved'))));
 
 alter table public.products add column if not exists owner_id uuid references auth.users(id) on delete cascade;
 create index if not exists products_owner_idx on public.products(owner_id);
