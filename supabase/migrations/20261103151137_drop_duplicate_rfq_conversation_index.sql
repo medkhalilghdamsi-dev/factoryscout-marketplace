@@ -1,0 +1,1 @@
+drop index if exists public.rfq_conversations_rfq_manufacturer_unique;
