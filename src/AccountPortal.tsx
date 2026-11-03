@@ -5,7 +5,7 @@ import MessagingPanel from "./MessagingPanel";
 
 
 type Profile = { id:string; email:string|null; full_name:string; account_type:"buyer"|"supplier"; role:"user"|"admin" };
-type SupplierAccount = { id:string; owner_id:string; manufacturer_id:string|null; company_name:string; slug:string; website:string|null; location:string; about:string; status:"pending"|"approved"|"rejected" };
+type SupplierAccount = { id:string; owner_id:string; manufacturer_id:string|null; requested_manufacturer_id?:string|null; company_name:string; slug:string; website:string|null; location:string; about:string; status:"pending"|"approved"|"rejected" };
 
 const blankProduct = { name:"", product_type:"Streetwear", description:"", materials:"", techniques:"", minimum_order:"", sample_available:false, lead_time_days:"", image_url:"" };
 const slugify = (value:string) => value.toLowerCase().trim().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,90);
@@ -23,7 +23,7 @@ export default function AccountPortal() {
   const [password,setPassword] = useState("");
   const [fullName,setFullName] = useState("");
   const [accountType,setAccountType] = useState<"buyer"|"supplier">("buyer");
-  const [company,setCompany] = useState({company_name:"",website:"",location:"",about:"",contact_name:""});
+  const [company,setCompany] = useState({company_name:"",website:"",location:"",about:"",contact_name:"",requested_manufacturer_id:""});
   const [product,setProduct] = useState(blankProduct);
   const [uploadingImage,setUploadingImage] = useState(false);
   const [adminSuppliers,setAdminSuppliers] = useState<any[]>([]);
@@ -32,6 +32,7 @@ export default function AccountPortal() {
   const [adminManufacturers,setAdminManufacturers] = useState<any[]>([]);
   const [verificationDrafts,setVerificationDrafts] = useState<Record<string,{evidence:string;evidence_note:string}>>({});
   const [savedManufacturers,setSavedManufacturers] = useState<any[]>([]);
+  const [claimableManufacturers,setClaimableManufacturers] = useState<any[]>([]);
   const [buyerRfqs,setBuyerRfqs] = useState<any[]>([]);
   const [supplierRfqs,setSupplierRfqs] = useState<any[]>([]);
   const [quoteDrafts,setQuoteDrafts] = useState<Record<string,{unit_price:string;currency:string;minimum_order:string;lead_time_days:string;sample_available:boolean;notes:string;valid_until:string}>>({});
@@ -41,19 +42,22 @@ export default function AccountPortal() {
     setProfile(null);
     setSupplier(null);
     setSavedManufacturers([]);
+    setClaimableManufacturers([]);
     setBuyerRfqs([]);
     setSupplierRfqs([]);
     if (!current || !supabase) return;
-    const [p,s,saved] = await Promise.all([
+    const [p,s,saved,claimables] = await Promise.all([
       supabase.from("profiles").select("id,email,full_name,account_type,role").eq("id",current.id).maybeSingle(),
       supabase.from("supplier_accounts").select("*").eq("owner_id",current.id).maybeSingle(),
-      supabase.from("saved_manufacturers").select("manufacturer_id,manufacturers(name,region)").eq("user_id",current.id).order("created_at",{ascending:false})
+      supabase.from("saved_manufacturers").select("manufacturer_id,manufacturers(name,region)").eq("user_id",current.id).order("created_at",{ascending:false}),
+      supabase.from("manufacturers").select("id,name,region").eq("is_published",true).order("name",{ascending:true})
     ]);
     if (p.error) setMessage("Your account profile could not be loaded. Please refresh.");
     else setProfile(p.data as Profile|null);
     if (s.error && s.error.code !== "PGRST116") setMessage("Supplier workspace could not be loaded.");
     else setSupplier(s.data as SupplierAccount|null);
     if (!saved.error) setSavedManufacturers(saved.data || []);
+    if (!claimables.error) setClaimableManufacturers(claimables.data || []);
     if (p.data?.account_type === "buyer") {
       const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,rfq_targets(manufacturers(name)),unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,valid_until,created_at),rfq_quote_decisions(manufacturer_id,status)").eq("buyer_id",current.id).order("created_at",{ascending:false});
       if (!error) setBuyerRfqs(data || []);
@@ -77,7 +81,7 @@ export default function AccountPortal() {
   const loadAdminData = async () => {
     if (!supabase) return;
     const [s,p,a,m] = await Promise.all([
-      supabase.from("supplier_accounts").select("id,company_name,location,website,about,slug,created_at").eq("status","pending").order("created_at",{ascending:true}),
+      supabase.from("supplier_accounts").select("id,company_name,location,website,about,slug,created_at,requested_manufacturer_id,requested_manufacturer:manufacturers!supplier_accounts_requested_manufacturer_id_fkey(name,region)").eq("status","pending").order("created_at",{ascending:true}),
       supabase.from("products").select("id,name,product_type,manufacturer_id,created_at").eq("status","pending").order("created_at",{ascending:true}),
       supabase.from("admin_review_events").select("id,entity_type,entity_id,action,actor_id,previous_state,new_state,created_at").order("created_at",{ascending:false}).limit(30),
       supabase.from("manufacturers").select("id,name,region,website,verification_status,evidence,evidence_note,is_published").neq("verification_status","independently_verified").order("name",{ascending:true})
@@ -157,7 +161,8 @@ export default function AccountPortal() {
     const {data,error} = await supabase.from("supplier_accounts").insert({
       owner_id:user.id, company_name:company.company_name.trim(), slug,
       website:company.website.trim()||null, location:company.location.trim(),
-      about:company.about.trim(), contact_name:company.contact_name.trim()||null
+      about:company.about.trim(), contact_name:company.contact_name.trim()||null,
+      requested_manufacturer_id:company.requested_manufacturer_id||null
     }).select("*").single();
     if (error) setMessage(error.code === "23505" ? "That company name or storefront address is already in use." : error.message);
     else { setSupplier(data as SupplierAccount); setMessage("Supplier application submitted. Your storefront will be published after review."); }
@@ -272,10 +277,12 @@ export default function AccountPortal() {
           <h2>Your<br/><em>workspace.</em></h2>
           <p className="account-copy">{user?.email}</p>
           <div className="account-status"><b>{profile?.account_type==="supplier"?"Supplier account":"Buyer account"}</b><span>{profile?.role==="admin"?"Administrator": "Standard member"}</span></div>
-          {profile?.role==="admin" && <div className="admin-dashboard"><div className="account-status"><b>Admin moderation</b><span>Only accounts explicitly promoted by the platform owner can access these controls.</span></div><h3>Supplier applications ({adminSuppliers.length})</h3>{adminSuppliers.length===0?<p className="account-copy">No supplier applications waiting for review.</p>:adminSuppliers.map(s=><div className="admin-review-item" key={s.id}><b>{s.company_name}</b><span>{s.location} · {s.slug}</span><p>{s.about || "No company description submitted."}</p><div><button disabled={busy} onClick={()=>approveSupplier(s.id)}>Approve & create listing</button><button disabled={busy} onClick={()=>rejectSupplier(s.id)}>Reject</button></div></div>)}<h3>Manufacturer verification ({adminManufacturers.length})</h3>{adminManufacturers.length===0?<p className="account-copy">No manufacturers are waiting for verification review.</p>:adminManufacturers.map(m=>{const draft=verificationDrafts[m.id]||{evidence:m.evidence==="Supplier-published"?"":m.evidence||"",evidence_note:m.evidence_note||""};return <div className="admin-review-item" key={m.id}><b>{m.name}</b><span>{m.region} · {m.verification_status} · {m.is_published?"Published":"Unpublished"}</span>{m.website&&<a href={m.website} target="_blank" rel="noreferrer">Open supplier website ↗</a>}<label>Public evidence URL<input type="url" placeholder="https://" value={draft.evidence} onChange={e=>setVerificationDrafts(v=>({...v,[m.id]:{...draft,evidence:e.target.value}}))}/></label><label>Reviewer notes<textarea rows={2} maxLength={2000} value={draft.evidence_note} onChange={e=>setVerificationDrafts(v=>({...v,[m.id]:{...draft,evidence_note:e.target.value}}))}/></label><div className="quote-actions"><button disabled={busy} onClick={()=>updateManufacturerVerification(m,"claim_review")}>Claim review</button><button disabled={busy} onClick={()=>updateManufacturerVerification(m,"evidence_review")}>Evidence review</button><button disabled={busy||!/^https?:\/\//i.test(draft.evidence.trim())||draft.evidence_note.trim().length<20} onClick={()=>updateManufacturerVerification(m,"independently_verified")}>Mark independently verified</button></div></div>})}<h3>Product listings ({adminProducts.length})</h3>{adminProducts.length===0?<p className="account-copy">No product listings waiting for review.</p>:adminProducts.map(p=><div className="admin-review-item" key={p.id}><b>{p.name}</b><span>{p.product_type} · Manufacturer {p.manufacturer_id}</span><div><button disabled={busy} onClick={()=>moderateProduct(p.id,"published")}>Publish</button><button disabled={busy} onClick={()=>moderateProduct(p.id,"rejected")}>Reject</button></div></div>)}<h3>Review history ({adminEvents.length})</h3>{adminEvents.length===0?<p className="account-copy">Admin supplier, product and verification decisions will appear here.</p>:<div className="admin-audit-list">{adminEvents.map(e=><div className="admin-audit-item" key={e.id}><div><b>{e.action.replaceAll("_"," ")}</b><span>{e.entity_type} · {e.entity_id} · by {e.actor_id||"system"}</span></div><time>{new Date(e.created_at).toLocaleString()}</time><small>Before: {JSON.stringify(e.previous_state)} → After: {JSON.stringify(e.new_state)}</small></div>)}</div>}</div>}
+          {profile?.role==="admin" && <div className="admin-dashboard"><div className="account-status"><b>Admin moderation</b><span>Only accounts explicitly promoted by the platform owner can access these controls.</span></div><h3>Supplier applications ({adminSuppliers.length})</h3>{adminSuppliers.length===0?<p className="account-copy">No supplier applications waiting for review.</p>:adminSuppliers.map(s=><div className="admin-review-item" key={s.id}><b>{s.company_name}</b><span>{s.location} · {s.slug}</span>{s.requested_manufacturer_id&&<p className="supplier-claim-note">Claim request: {s.requested_manufacturer?.name||s.requested_manufacturer_id}{s.requested_manufacturer?.region?" · "+s.requested_manufacturer.region:""}. Verify ownership before approving.</p>}<p>{s.about || "No company description submitted."}</p><div><button disabled={busy} onClick={()=>approveSupplier(s.id)}>Approve & create listing</button><button disabled={busy} onClick={()=>rejectSupplier(s.id)}>Reject</button></div></div>)}<h3>Manufacturer verification ({adminManufacturers.length})</h3>{adminManufacturers.length===0?<p className="account-copy">No manufacturers are waiting for verification review.</p>:adminManufacturers.map(m=>{const draft=verificationDrafts[m.id]||{evidence:m.evidence==="Supplier-published"?"":m.evidence||"",evidence_note:m.evidence_note||""};return <div className="admin-review-item" key={m.id}><b>{m.name}</b><span>{m.region} · {m.verification_status} · {m.is_published?"Published":"Unpublished"}</span>{m.website&&<a href={m.website} target="_blank" rel="noreferrer">Open supplier website ↗</a>}<label>Public evidence URL<input type="url" placeholder="https://" value={draft.evidence} onChange={e=>setVerificationDrafts(v=>({...v,[m.id]:{...draft,evidence:e.target.value}}))}/></label><label>Reviewer notes<textarea rows={2} maxLength={2000} value={draft.evidence_note} onChange={e=>setVerificationDrafts(v=>({...v,[m.id]:{...draft,evidence_note:e.target.value}}))}/></label><div className="quote-actions"><button disabled={busy} onClick={()=>updateManufacturerVerification(m,"claim_review")}>Claim review</button><button disabled={busy} onClick={()=>updateManufacturerVerification(m,"evidence_review")}>Evidence review</button><button disabled={busy||!/^https?:\/\//i.test(draft.evidence.trim())||draft.evidence_note.trim().length<20} onClick={()=>updateManufacturerVerification(m,"independently_verified")}>Mark independently verified</button></div></div>})}<h3>Product listings ({adminProducts.length})</h3>{adminProducts.length===0?<p className="account-copy">No product listings waiting for review.</p>:adminProducts.map(p=><div className="admin-review-item" key={p.id}><b>{p.name}</b><span>{p.product_type} · Manufacturer {p.manufacturer_id}</span><div><button disabled={busy} onClick={()=>moderateProduct(p.id,"published")}>Publish</button><button disabled={busy} onClick={()=>moderateProduct(p.id,"rejected")}>Reject</button></div></div>)}<h3>Review history ({adminEvents.length})</h3>{adminEvents.length===0?<p className="account-copy">Admin supplier, product and verification decisions will appear here.</p>:<div className="admin-audit-list">{adminEvents.map(e=><div className="admin-audit-item" key={e.id}><div><b>{e.action.replaceAll("_"," ")}</b><span>{e.entity_type} · {e.entity_id} · by {e.actor_id||"system"}</span></div><time>{new Date(e.created_at).toLocaleString()}</time><small>Before: {JSON.stringify(e.previous_state)} → After: {JSON.stringify(e.new_state)}</small></div>)}</div>}</div>}
           {profile?.role!=="admin" && profile?.account_type==="supplier" && !supplier && <>
             <h3>Set up your supplier profile</h3>
             <form className="account-form" onSubmit={createSupplier}>
+              <label>Existing FactoryScout profile (optional)<select value={company.requested_manufacturer_id} onChange={e=>{const id=e.target.value;const match=claimableManufacturers.find(m=>m.id===id);setCompany({...company,requested_manufacturer_id:id,company_name:match?.name||company.company_name,location:match?.region||company.location});}}><option value="">Create a new supplier profile</option>{claimableManufacturers.map(m=><option key={m.id} value={m.id}>{m.name} · {m.region}</option>)}</select></label>
+              <small className="supplier-claim-help">Only claim a profile your company owns or is authorized to represent. FactoryScout will review ownership before linking it to your account.</small>
               <label>Company name<input required maxLength={180} value={company.company_name} onChange={e=>setCompany({...company,company_name:e.target.value})}/></label>
               <label>Company website<input type="url" placeholder="https://" value={company.website} onChange={e=>setCompany({...company,website:e.target.value})}/></label>
               <label>Factory location<input required maxLength={160} placeholder="City, country" value={company.location} onChange={e=>setCompany({...company,location:e.target.value})}/></label>
