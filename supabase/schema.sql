@@ -323,3 +323,57 @@ end;
 $$;
 revoke all on function public.admin_approve_supplier_account(uuid) from public, anon;
 grant execute on function public.admin_approve_supplier_account(uuid) to authenticated;
+
+-- Public product image storage. Uploads are restricted to approved supplier accounts
+-- and each supplier can write only inside their own user-id folder.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('product-images', 'product-images', true, 5242880, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Anyone can view published product images" on storage.objects;
+create policy "Anyone can view published product images"
+on storage.objects for select to anon, authenticated
+using (bucket_id = 'product-images');
+
+drop policy if exists "Approved suppliers can upload product images" on storage.objects;
+create policy "Approved suppliers can upload product images"
+on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'product-images'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and exists (
+    select 1 from public.supplier_accounts sa
+    where sa.owner_id = (select auth.uid()) and sa.status = 'approved'
+  )
+);
+
+drop policy if exists "Suppliers can replace their own product images" on storage.objects;
+create policy "Suppliers can replace their own product images"
+on storage.objects for update to authenticated
+using (
+  bucket_id = 'product-images'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+)
+with check (
+  bucket_id = 'product-images'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and exists (
+    select 1 from public.supplier_accounts sa
+    where sa.owner_id = (select auth.uid()) and sa.status = 'approved'
+  )
+);
+
+drop policy if exists "Suppliers can delete their own product images" on storage.objects;
+create policy "Suppliers can delete their own product images"
+on storage.objects for delete to authenticated
+using (
+  bucket_id = 'product-images'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and exists (
+    select 1 from public.supplier_accounts sa
+    where sa.owner_id = (select auth.uid()) and sa.status = 'approved'
+  )
+);
