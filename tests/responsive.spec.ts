@@ -150,3 +150,36 @@ test("supplier storefront product listings open their product detail page", asyn
   await expect(page).toHaveURL(/\/products\/test-storefront-product$/);
   await expect(page.getByRole("heading", { name: "Premium Woven Overshirt" })).toBeVisible();
 });
+
+test("RFQ form blocks manufacturers without approved supplier accounts", async ({ page }) => {
+  const manufacturer = {
+    id: "onboarding-factory",
+    name: "Onboarding Factory",
+    region: "Sousse, Tunisia",
+    category: ["Sportswear"],
+    summary: "A supplier profile awaiting account approval.",
+    capabilities: ["Sportswear"],
+    moq: "Not confirmed",
+    leadTime: "Not confirmed",
+    evidence: "Supplier-published",
+    evidenceNote: "Awaiting supplier onboarding.",
+    exportMarkets: [],
+    status: "Review required",
+    rfqEnabled: false
+  };
+  await page.route("**/api/manufacturers", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([manufacturer])
+  }));
+  await page.route("**/api/products", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: "[]"
+  }));
+  await page.goto("/");
+  await page.getByRole("button", { name: /Describe what you need/ }).click();
+  await expect(page.locator(".rfq-no-suppliers")).toBeVisible();
+  await expect(page.locator(".rfq-suppliers input[type='checkbox']")).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Send RFQ to/ })).toBeDisabled();
+});
