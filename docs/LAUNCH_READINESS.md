@@ -85,7 +85,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Secure first-owner admin bootstrap; no public role promotion.
 - [ ] Admin dashboard for supplier verification, supplier applications, products, RFQs, quotes, reports and users.
 - [ ] Review log with reviewer, timestamp, evidence source, decision and notes.
-- [ ] Supplier verification checklist and evidence expiry/re-review dates.
+- [x] Admin verification queue supports claim review, evidence review and independent-verification decisions; the final status requires a public evidence URL and reviewer note, and changes are recorded in the audit log.
+- [ ] Formal verification checklist, evidence expiry/re-review dates and scheduled re-verification.
 - [ ] Takedown/report process and moderation status controls.
 - [ ] Seed content audit: remove, correct or clearly label every unverified record.
 
