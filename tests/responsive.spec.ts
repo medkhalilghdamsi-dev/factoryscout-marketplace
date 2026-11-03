@@ -242,3 +242,39 @@ test("public enquiry endpoint rate-limits repeated submissions from one client",
   expect(limited.status()).toBe(429);
   expect(Number(limited.headers()["retry-after"])).toBeGreaterThan(0);
 });
+
+test("manufacturer enquiry clearly explains FactoryScout review and follow-up", async ({ page }) => {
+  await page.route("**/api/manufacturers", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      id: "unverified-factory",
+      name: "Unverified Factory",
+      region: "Sousse, Tunisia",
+      category: ["Sportswear"],
+      summary: "Supplier profile awaiting onboarding.",
+      capabilities: ["Sportswear"],
+      moq: "Not confirmed",
+      leadTime: "Not confirmed",
+      evidence: "Supplier-published",
+      evidenceNote: "Awaiting supplier verification.",
+      exportMarkets: [],
+      status: "Review required",
+      rfqEnabled: false
+    }])
+  }));
+  await page.route("**/api/products", route => route.fulfill({
+    status: 200, contentType: "application/json", body: "[]"
+  }));
+  await page.route("**/api/enquiries", route => route.fulfill({
+    status: 201, contentType: "application/json", body: JSON.stringify({ ok: true, id: "test-enquiry" })
+  }));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Enquire about Unverified Factory" }).click();
+  await expect(page.getByText(/message goes to the FactoryScout team first/i)).toBeVisible();
+  await page.getByLabel("Your name").fill("Test Buyer");
+  await page.getByLabel("Work email").fill("buyer@example.com");
+  await page.getByLabel("Product type").fill("Sportswear set");
+  await page.getByRole("button", { name: /Send to FactoryScout/ }).click();
+  await expect(page.getByRole("status")).toContainText(/sent to FactoryScout for review/i);
+});
