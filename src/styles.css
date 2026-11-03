@@ -633,3 +633,63 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
  .storefront-nav .nav-cta{font-size:8px;padding-inline:8px}
 }
 @media(hover:none){.button:hover,.product-card:hover{transform:none}.save-button:hover{background:transparent}}
+
+
+/* FactoryScout commerce shell — familiar marketplace conventions, B2B sourcing workflow */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.topbar{position:sticky;top:0;z-index:80;display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;grid-template-areas:"brand search nav actions";gap:22px;padding:0 4.5%;height:78px;background:#101b18;box-shadow:0 5px 20px #08130d18}
+.topbar>.brand{grid-area:brand;white-space:nowrap}.topbar>.nav{grid-area:nav;gap:18px;white-space:nowrap}.topbar>.top-actions{grid-area:actions;gap:12px}
+.marketplace-global-search{grid-area:search;display:flex;align-items:center;min-width:0;height:44px;background:#fff;border:2px solid #d8e46d;border-radius:3px;overflow:hidden}
+.marketplace-global-search:focus-within{box-shadow:0 0 0 3px #d8e46d35}
+.marketplace-global-search input{width:100%;min-width:0;height:100%;border:0;outline:0;padding:0 14px;color:#26352c;font-size:13px;background:#fff}
+.marketplace-global-search input::placeholder{color:#89938b}
+.marketplace-global-search button{height:100%;width:52px;flex:0 0 52px;border:0;background:#d8e46d;color:#17231e;font-size:28px;cursor:pointer}
+.sourcing-list-button{position:relative;display:flex;align-items:center;gap:7px;padding:8px 10px;min-height:42px;border:1px solid #65746b;background:transparent;color:#fff;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
+.sourcing-list-count{display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;border-radius:20px;background:#d8e46d;color:#17231e;font-size:10px;font-weight:800}
+.marketplace-category-nav{position:sticky;top:78px;z-index:70;display:flex;align-items:center;gap:clamp(13px,2.2vw,30px);min-height:43px;padding:0 4.5%;overflow-x:auto;white-space:nowrap;background:#24362d;color:#f5f7ef;border-bottom:1px solid #ffffff18;scrollbar-width:none}
+.marketplace-category-nav::-webkit-scrollbar{display:none}
+.marketplace-category-nav>span{font-size:8px;letter-spacing:1.4px;color:#b9c5b9;font-weight:800}
+.marketplace-category-nav button,.marketplace-category-nav a{display:inline-flex;align-items:center;min-height:42px;padding:0;border:0;background:none;color:#f0f3ec;font-size:11px;cursor:pointer}
+.marketplace-category-nav button:hover,.marketplace-category-nav a:hover{color:#d8e46d}
+.marketplace-category-nav a{margin-left:auto;font-weight:700;color:#d8e46d}
+.directory .search-panel{border-radius:3px;box-shadow:0 5px 18px #19251a0a}
+.directory .cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.factory-card{border-radius:3px;overflow:hidden;box-shadow:0 2px 8px #15251a08}
+.factory-card:hover{box-shadow:0 12px 28px #14251b16}
+.card-content{display:flex;flex-direction:column;align-items:stretch}
+.card-content .card-footer{margin-top:auto}
+.product-card{border-radius:4px;overflow:hidden;box-shadow:0 2px 10px #19251a0a;transition:box-shadow .18s,transform .18s}
+.product-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px #14251b16}
+.product-image{background:#eef0e9}
+.product-info{display:flex;flex-direction:column;align-items:stretch}
+.product-info .text-button{margin-top:auto;align-self:flex-start;padding-top:14px}
+.catalog-empty{border-radius:4px}
+@media(max-width:1180px){
+ .topbar{grid-template-columns:auto minmax(190px,1fr) auto;grid-template-areas:"brand search actions";gap:16px;padding-inline:24px}
+ .topbar>.nav{display:none}
+ .marketplace-category-nav{gap:18px;padding-inline:24px}
+}
+@media(max-width:640px){
+ .topbar{position:sticky;top:0;height:auto;min-height:108px;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:42px 46px;grid-template-areas:"brand actions" "search search";gap:7px 8px;padding:8px 13px 9px}
+ .topbar>.brand{font-size:17px;gap:8px}.topbar>.brand .brand-mark{width:29px;height:29px}
+ .topbar>.top-actions{gap:6px;min-width:0}.topbar>.top-actions .account-trigger{font-size:9px;padding:7px 8px;min-height:38px}
+ .topbar>.top-actions>.nav-cta{display:none}
+ .topbar>.top-actions .sourcing-list-button{min-height:38px;padding:5px 7px;font-size:9px;gap:4px}
+ .sourcing-list-count{min-width:17px;height:17px;font-size:9px}
+ .topbar>.menu-btn{width:38px;height:38px;min-height:38px}
+ .marketplace-global-search{height:44px;width:100%;border-width:1px}
+ .marketplace-global-search input{font-size:16px;padding-inline:11px}
+ .marketplace-global-search button{width:46px;flex-basis:46px}
+ .topbar>.nav{position:absolute;top:108px;left:0;right:0;z-index:100;background:#101b18;padding:10px 16px 18px;box-shadow:0 18px 35px #0004}
+ .marketplace-category-nav{top:108px;min-height:39px;gap:17px;padding-inline:14px}
+ .marketplace-category-nav>span{font-size:7px}.marketplace-category-nav button,.marketplace-category-nav a{font-size:10px;min-height:38px}
+ .marketplace-category-nav a{margin-left:0}
+ .directory .cards{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:380px){
+ .topbar{padding-inline:10px}.topbar>.brand{font-size:15px}
+ .topbar>.top-actions .account-trigger{font-size:8px;padding:6px}
+ .topbar>.top-actions .sourcing-list-button{font-size:8px;padding-inline:5px}
+ .marketplace-category-nav{gap:13px;padding-inline:11px}
+ .marketplace-global-search input{font-size:15px}
+}
