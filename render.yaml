@@ -13,7 +13,7 @@ services:
         value: production
       - key: SUPABASE_URL
         value: https://mkirmvrzwldilbdjbgyv.supabase.co
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: SUPABASE_ANON_KEY
         sync: false
       - key: VITE_SUPABASE_URL
         value: https://mkirmvrzwldilbdjbgyv.supabase.co
