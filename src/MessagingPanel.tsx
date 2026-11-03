@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "./AccountPortal";
+import { supabase } from "./supabaseClient";
 
 type Conversation = {
   id: string;
