@@ -51,7 +51,15 @@ export default function AccountPortal() {
     else setProfile(p.data as Profile|null);
     if (s.error && s.error.code !== "PGRST116") setMessage("Supplier workspace could not be loaded.");
     else setSupplier(s.data as SupplierAccount|null);
-    if (!saved.error) setSavedManufacturers(saved.data || []);\n    if (p.data?.account_type === "buyer") {\n      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});\n      if (!error) setBuyerRfqs(data || []);\n    }\n    if (s.data?.status === "approved" && s.data?.manufacturer_id) {\n      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets!inner(manufacturer_id)").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});\n      if (!error) setSupplierRfqs(data || []);\n    }
+    if (!saved.error) setSavedManufacturers(saved.data || []);
+    if (p.data?.account_type === "buyer") {
+      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});
+      if (!error) setBuyerRfqs(data || []);
+    }
+    if (s.data?.status === "approved" && s.data?.manufacturer_id) {
+      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets!inner(manufacturer_id)").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});
+      if (!error) setSupplierRfqs(data || []);
+    }
   };
 
   useEffect(() => {
