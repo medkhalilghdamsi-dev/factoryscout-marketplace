@@ -37,7 +37,7 @@ export default function App() {
   const [rfq,setRfq] = useState<RFQ>({name:"",email:"",company:"",productType:"",quantity:"",targetPrice:"",deliveryCountry:"",materialSpecs:"",sampleRequired:false,targetDate:"",manufacturerIds:[],honeypot:""});
   const [compareIds,setCompareIds] = useState<string[]>([]); const [savedIds,setSavedIds] = useState<string[]>([]); const [sortBy,setSortBy] = useState("recommended"); const [showCompare,setShowCompare] = useState(false);
   const [productQuery,setProductQuery] = useState(""); const [productCategory,setProductCategory] = useState("All products"); const [productSort,setProductSort] = useState("newest"); const [samplesOnly,setSamplesOnly] = useState(false);
-  const [productRouteId,setProductRouteId] = useState<string|null>(()=>window.location.pathname.match(/^\/products\/([^/]+)\/?$/)?.[1] ?? null);
+  const [productRouteId,setProductRouteId] = useState<string|null>(()=>window.location.pathname.match(/^\/products\/([^/]+)\/?$/)?.[1] ?? null); const [productsLoaded,setProductsLoaded] = useState(false);
   const [basketOpen,setBasketOpen] = useState(false);
   const [basket,setBasket] = useState<Array<{productId:string;quantity:number}>>(()=>{try{return JSON.parse(window.localStorage.getItem("factoryscout-product-basket")||"[]");}catch{return [];}});
   useEffect(()=>{window.localStorage.setItem("factoryscout-product-basket",JSON.stringify(basket));},[basket]);
