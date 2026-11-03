@@ -148,3 +148,12 @@ footer{padding:32px 7.2%}.profile-modal{border-radius:4px}.form-grid input,.form
 .admin-review-item>div{display:flex;gap:8px;flex-wrap:wrap}
 .admin-review-item button{border:1px solid #d9d7d1;background:#f7f6f2;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer}
 .admin-review-item button:first-child{background:#253329;color:white;border-color:#253329}
+
+
+/* Marketplace product discovery controls */
+.catalog-tools{display:grid;grid-template-columns:minmax(220px,1.8fr) minmax(150px,1fr) minmax(145px,.8fr) auto;gap:12px;align-items:center;margin:28px 0 10px;padding:16px;border:1px solid var(--line,#dedbd4);background:#fff}
+.catalog-search,.catalog-tools select{width:100%;min-width:0;padding:13px 14px;border:1px solid #dedbd4;background:#fff;color:#222;font:inherit;font-size:13px;outline-offset:2px}
+.sample-filter{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;color:#444}
+.catalog-results{margin:0 0 18px;color:#777;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.product-supplier{margin-top:-8px;margin-bottom:12px;color:#777;font-size:12px}
+@media(max-width:760px){.catalog-tools{grid-template-columns:1fr 1fr}.catalog-search{grid-column:1/-1}.sample-filter{grid-column:1/-1}}
