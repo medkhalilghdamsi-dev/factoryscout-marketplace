@@ -73,6 +73,25 @@ test("shareable product detail pages show specifications and prefill a product R
     evidence: "Supplier-submitted",
     manufacturers: { name: "Les Ateliers BS", region: "La Soukra, Ariana" }
   };
+  await page.route("**/api/manufacturers", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      id: "les-ateliers-bs",
+      name: "Les Ateliers BS",
+      region: "La Soukra, Ariana",
+      category: ["Premium ready-to-wear"],
+      summary: "Approved test supplier.",
+      capabilities: ["Woven garments"],
+      moq: "100 pieces",
+      leadTime: "45 days",
+      evidence: "Supplier-published",
+      evidenceNote: "Test fixture only.",
+      exportMarkets: [],
+      status: "Approved supplier account",
+      rfqEnabled: true
+    }])
+  }));
   await page.route("**/api/products", route => route.fulfill({
     status: 200,
     contentType: "application/json",
@@ -140,6 +159,25 @@ test("supplier storefront product listings open their product detail page", asyn
     evidence: "Supplier-submitted",
     manufacturers: { name: "Les Ateliers BS", region: "La Soukra, Ariana" }
   };
+  await page.route("**/api/manufacturers", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      id: "les-ateliers-bs",
+      name: "Les Ateliers BS",
+      region: "La Soukra, Ariana",
+      category: ["Premium ready-to-wear"],
+      summary: "Approved test supplier.",
+      capabilities: ["Woven garments"],
+      moq: "100 pieces",
+      leadTime: "45 days",
+      evidence: "Supplier-published",
+      evidenceNote: "Test fixture only.",
+      exportMarkets: [],
+      status: "Approved supplier account",
+      rfqEnabled: true
+    }])
+  }));
   await page.route("**/api/products", route => route.fulfill({
     status: 200,
     contentType: "application/json",
