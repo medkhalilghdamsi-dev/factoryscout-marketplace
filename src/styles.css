@@ -713,3 +713,25 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
  .marketplace-category-nav>a:first-child,.marketplace-category-nav>a:nth-child(2),.marketplace-category-nav>a:nth-child(3){margin-left:0;color:#f0f3ec;font-weight:600}
  .marketplace-category-nav>span{margin-left:clamp(8px,1.2vw,18px);padding-left:clamp(8px,1.2vw,18px);border-left:1px solid #ffffff30}
 }
+
+/* RFQ messaging workspace */
+.messaging-panel{margin-top:28px;border-top:1px solid #d9ddd5;padding-top:24px}
+.messaging-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.messaging-heading h3{margin:0 0 6px}
+.messaging-heading>button,.conversation-choice,.message-compose button{border:1px solid #cbd2c8;border-radius:8px;background:#fff;color:#17231d;padding:9px 12px;font:inherit;cursor:pointer}
+.messaging-layout{display:grid;grid-template-columns:minmax(150px,0.34fr) minmax(0,1fr);gap:14px;min-height:260px}
+.conversation-list{display:flex;flex-direction:column;gap:7px;min-width:0}
+.conversation-choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:4px;min-width:0;overflow-wrap:anywhere}
+.conversation-choice.active{border-color:#263d32;background:#edf2ec}
+.conversation-choice span,.conversation-choice small{font-size:12px;color:#69736b}
+.message-thread{display:flex;flex-direction:column;min-width:0;border:1px solid #d9ddd5;border-radius:10px;overflow:hidden}
+.message-history{display:flex;flex-direction:column;gap:10px;flex:1;min-height:180px;max-height:360px;overflow:auto;padding:14px;background:#f7f8f5}
+.message-bubble{align-self:flex-start;max-width:82%;padding:10px 12px;border:1px solid #e0e4dc;border-radius:12px;background:white;overflow-wrap:anywhere}
+.message-bubble.mine{align-self:flex-end;background:#e8efe8;border-color:#d2dfd2}
+.message-bubble p{margin:0 0 6px;white-space:pre-wrap}
+.message-bubble time{font-size:10px;color:#68736b}
+.message-compose{display:flex;gap:8px;align-items:flex-end;padding:10px;border-top:1px solid #d9ddd5}
+.message-compose textarea{flex:1;min-width:0;resize:vertical;border:1px solid #cbd2c8;border-radius:8px;padding:10px;font:inherit}
+.message-compose button:disabled,.messaging-heading button:disabled{opacity:.55;cursor:not-allowed}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:640px){.messaging-layout{grid-template-columns:1fr}.conversation-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.message-history{max-height:300px}.message-compose{flex-direction:column;align-items:stretch}.message-compose button{width:100%}}
