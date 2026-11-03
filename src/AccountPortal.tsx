@@ -280,7 +280,7 @@ export default function AccountPortal() {
                 <label>Notes<textarea rows={2} maxLength={2000} value={draft.notes} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,notes:e.target.value}}))}/></label>
                 <label className="account-checkbox"><input type="checkbox" checked={draft.sample_available} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,sample_available:e.target.checked}}))}/> Samples available</label>
                 <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button>
-              </div></> }</div></div>;
+              </div></> }</div>;
             })}
           </div>}
           {profile?.role!=="admin" && profile?.account_type==="buyer" && <div className="buyer-workspace">
