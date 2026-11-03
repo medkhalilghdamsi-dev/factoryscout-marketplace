@@ -9,7 +9,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 ## Current verified baseline (2026-11-03)
 
 - React 19 + Vite frontend, Express API, Supabase Postgres/Auth/Storage, Render web service.
-- Render service: `factoryscout-marketplace`, Frankfurt, free plan; latest recorded deploy succeeded.
+- Render service: `factoryscout-marketplace`, Frankfurt, free plan; latest confirmed Render deployment is healthy but still points to commit `e5c4e4d` (2026-11-03 14:27 UTC). Later GitHub commits containing RFQ security, quote selection and admin audit work are not yet confirmed deployed; auto-deploy is enabled, so production must be rechecked before treating those changes as live.
 - GitHub main branch has responsive marketplace shell, supplier storefront route, global search/category navigation and Playwright responsive tests.
 - Supabase currently contains 4 manufacturer rows and 0 products, profiles, supplier accounts, supplier applications, enquiries, RFQs, RFQ targets, supplier quotes, conversations, messages, or saved suppliers.
 - All 4 seeded manufacturers are published while marked `unverified`; they are research leads, not verified suppliers.
