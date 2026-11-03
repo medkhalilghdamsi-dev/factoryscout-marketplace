@@ -8,6 +8,7 @@ type Conversation = {
   buyer_id: string;
   supplier_owner_id: string;
   updated_at: string;
+  manufacturers?: { name?: string } | null;
 };
 type Message = { id: string; conversation_id: string; sender_id: string; body: string; created_at: string; read_at: string | null };
 
@@ -25,7 +26,7 @@ export default function MessagingPanel({ userId, accountType }: { userId: string
     setLoading(true);
     const column = accountType === "buyer" ? "buyer_id" : "supplier_owner_id";
     const { data, error } = await supabase.from("rfq_conversations")
-      .select("id,rfq_id,manufacturer_id,buyer_id,supplier_owner_id,updated_at")
+      .select("id,rfq_id,manufacturer_id,buyer_id,supplier_owner_id,updated_at,manufacturers(name)")
       .eq(column, userId).order("updated_at", { ascending: false });
     if (error) setNotice("Conversations could not be loaded. Please refresh.");
     else {
@@ -75,10 +76,10 @@ export default function MessagingPanel({ userId, accountType }: { userId: string
     {notice && <p className="account-message" role="status">{notice}</p>}
     {conversations.length === 0 ? <p className="account-copy">{loading ? "Loading conversations…" : "No conversations yet. Conversations become available when an RFQ is matched with an approved supplier."}</p> : <div className="messaging-layout">
       <nav className="conversation-list" aria-label="Conversations">
-        {conversations.map((conversation, index) => <button type="button" key={conversation.id}
+        {conversations.map((conversation) => <button type="button" key={conversation.id}
           className={selectedId === conversation.id ? "conversation-choice active" : "conversation-choice"}
           aria-pressed={selectedId === conversation.id} onClick={() => setSelectedId(conversation.id)}>
-          <b>{accountType === "buyer" ? conversation.manufacturer_id : "Buyer request"}</b>
+          <b>{accountType === "buyer" ? (conversation.manufacturers?.name || "Supplier conversation") : "Buyer request"}</b>
           <span>RFQ {conversation.rfq_id.slice(0, 8).toUpperCase()}</span>
           <small>{new Date(conversation.updated_at).toLocaleDateString()}</small>
         </button>)}
