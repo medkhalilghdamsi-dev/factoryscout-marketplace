@@ -1,56 +1,51 @@
 # FactoryScout Marketplace
 
-A free-first B2B discovery marketplace for international buyers sourcing apparel and textile manufacturers in Tunisia and nearby markets.
+A buyer-side apparel sourcing directory for international brands exploring manufacturers in Tunisia and nearby markets.
 
-## Current MVP
-
-- Search and filter supplier profiles by product capability and location.
-- Manufacturer profile pages with MOQ, lead-time and evidence notes.
-- Clear distinction between supplier-published information and independently verified evidence.
-- Structured buyer enquiry form.
-- Express API for manufacturer records and enquiries.
-- Responsive desktop and mobile layout.
-- GitHub Actions build workflow.
+## MVP
+- Responsive manufacturer directory with search and filters.
+- Supplier profiles distinguish published claims from independent verification.
+- Express API for public directory reads, buyer enquiries and supplier listing applications.
+- Supabase/Postgres schema for manufacturers, enquiries and supplier applications.
+- Server-side service-role access only; no public table policies.
+- GitHub Pages is a static preview only. It does not run the Express API.
 
 ## Run locally
-
-Requirements: Node.js 20+ and npm.
-
+Requirements: Node.js 22+ and npm.
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
+Without Supabase credentials, the directory uses demo profiles. Enquiry and supplier application endpoints return a clear 503 response and do not pretend to store submissions.
 
-Open http://localhost:3000.
+## Connect Supabase
+1. Create a Supabase project.
+2. Run `supabase/schema.sql` in the project's SQL Editor.
+3. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the backend host.
+4. Keep the service-role key private. Never add it to Vite variables, frontend code, GitHub Pages, or a committed `.env` file.
+5. Deploy this Express application to a Node.js host and point the production domain to that host. GitHub Pages cannot host the API.
 
-Production build:
+The schema enables Row Level Security and deliberately defines no anon/authenticated table policies. The Express server uses the service-role key for limited API operations. Build an authenticated admin workflow before adding management endpoints.
 
+## API
+- `GET /api/health` — service status and database configuration.
+- `GET /api/manufacturers` — published profiles only.
+- `POST /api/enquiries` — validate and store a buyer enquiry.
+- `POST /api/supplier-applications` — submit a manufacturer listing request for review.
+
+Submission endpoints apply a basic per-IP in-memory rate limit. Before public traffic, move rate limiting to a shared store, add bot protection, email notifications and abuse monitoring.
+
+## Privacy and trust
+- Buyer enquiries and supplier applications are private database records.
+- Never expose the Supabase service-role key.
+- No profile should be described as audited, certified or independently verified unless evidence has been reviewed and the scope/date recorded.
+- Initial profiles are research leads, not endorsements. One regional comparison supplier is outside Tunisia and explicitly labelled.
+- Add a privacy notice, retention period, deletion process and responsible contact before accepting real personal data.
+
+## Build
 ```bash
+npm run typecheck
 npm run build
 NODE_ENV=production npm start
 ```
-
-## Important data and trust policy
-
-The initial profiles are research leads, not endorsed suppliers. Supplier-published statements are labelled as such. No profile should be described as audited, certified or independently verified unless FactoryScout has reviewed reliable evidence and recorded the scope and date of that review.
-
-The initial directory includes one regional comparison supplier outside Tunisia, explicitly labelled. It is not a Tunisian factory.
-
-## Enquiry storage limitation
-
-The MVP currently writes enquiries to `data/enquiries.json` on the server. This is suitable only for local testing or a controlled demonstration on a persistent disk. It does not send email notifications, provide an admin inbox, or guarantee persistence on ephemeral hosting. Before public launch, connect a managed database, configure access-controlled admin review, add spam protection/rate limits, privacy notice and retention controls, and test backups.
-
-Do not put credentials, API keys, private supplier documents or personal customer data in Git.
-
-## Roadmap
-
-1. Manufacturer claim/listing application and admin approval.
-2. Database-backed profiles and enquiry management.
-3. Supplier evidence records with source, review date, reviewer and status.
-4. Buyer accounts, saved shortlists and comparison exports.
-5. Supplier response workflow and quote tracking.
-6. Deployment, monitoring, privacy and security hardening.
-
-## Product principle
-
-FactoryScout is not a pay-to-rank directory. Search and comparison should be driven by product fit and transparent evidence. Paid placement, if introduced later, must be disclosed and must not alter verification status.
