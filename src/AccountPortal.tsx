@@ -38,6 +38,8 @@ export default function AccountPortal() {
     setProfile(null);
     setSupplier(null);
     setSavedManufacturers([]);
+    setBuyerRfqs([]);
+    setSupplierRfqs([]);
     if (!current || !supabase) return;
     const [p,s,saved] = await Promise.all([
       supabase.from("profiles").select("id,email,full_name,account_type,role").eq("id",current.id).maybeSingle(),
@@ -50,11 +52,11 @@ export default function AccountPortal() {
     else setSupplier(s.data as SupplierAccount|null);
     if (!saved.error) setSavedManufacturers(saved.data || []);
     if (p.data?.account_type === "buyer") {
-      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,rfq_targets(manufacturers(name)),unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});
+      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,rfq_targets(manufacturers(name)),unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at),rfq_quote_decisions(manufacturer_id,status)").eq("buyer_id",current.id).order("created_at",{ascending:false});
       if (!error) setBuyerRfqs(data || []);
     }
     if (s.data?.status === "approved" && s.data?.manufacturer_id) {
-      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets!inner(manufacturer_id)").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});
+      const {data,error} = await supabase.from("rfqs").select("*,undefined").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});
       if (!error) setSupplierRfqs(data || []);
     }
   };
@@ -184,6 +186,15 @@ export default function AccountPortal() {
     else setSavedManufacturers(rows=>rows.filter(row=>row.manufacturer_id!==manufacturerId));
   };
 
+  const selectQuote = async (rfqId:string, manufacturerId:string) => {
+    if (!supabase || !user) return;
+    setBusy(true); setMessage("");
+    const {error} = await supabase.rpc("select_rfq_quote",{p_rfq_id:rfqId,p_manufacturer_id:manufacturerId});
+    if (error) setMessage("Supplier selection could not be saved: "+error.message);
+    else { setMessage("Supplier selected. The chosen factory can see your decision in its workspace."); await loadAccount(user); }
+    setBusy(false);
+  };
+
   const submitQuote = async (rfqId:string, manufacturerId:string) => {
     if (!supabase || !user) return;
     const draft = quoteDrafts[rfqId];
@@ -260,7 +271,8 @@ export default function AccountPortal() {
             <h3>RFQs matched to your factory ({supplierRfqs.length})</h3>
             {supplierRfqs.length===0 ? <p className="account-copy">No buyer requests have been assigned to your factory yet.</p> : supplierRfqs.map(r=>{
               const draft=quoteDrafts[r.id]||{unit_price:"",currency:"EUR",minimum_order:"",lead_time_days:"",sample_available:false,notes:""};
-              return <div className="admin-review-item" key={r.id}><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()}</span><p>{r.material_specs||"No additional specifications supplied."}</p><div className="account-form">
+              const decision=(r.rfq_quote_decisions||[]).find((d:any)=>d.manufacturer_id===supplier.manufacturer_id);
+              return <div className="admin-review-item" key={r.id}><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()}</span>{decision?.status==="selected"&&<span className="quote-decision selected">Buyer selected your factory</span>}{decision?.status==="not_selected"&&<span className="quote-decision">Buyer selected another quotation</span>}<p>{r.material_specs||"No additional specifications supplied."}</p><div className="account-form">
                 <label>Unit price<input type="number" min="0.0001" step="0.0001" value={draft.unit_price} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,unit_price:e.target.value}}))}/></label>
                 <label>Currency<select value={draft.currency} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,currency:e.target.value}}))}><option>EUR</option><option>USD</option><option>TND</option><option>GBP</option></select></label>
                 <label>Minimum order<input type="number" min="1" value={draft.minimum_order} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,minimum_order:e.target.value}}))}/></label>
@@ -285,7 +297,7 @@ export default function AccountPortal() {
                     <td>{q.minimum_order ? Number(q.minimum_order).toLocaleString() : "Not specified"}</td>
                     <td>{q.lead_time_days ? `${q.lead_time_days} days` : "Not specified"}</td>
                     <td>{q.sample_available ? "Available" : "Not available"}</td>
-                    <td><span className="quote-status">{q.status}</span></td>
+                    <td><span className="quote-status">{q.status}</span>{(()=>{const decision=(r.rfq_quote_decisions||[]).find((d:any)=>d.manufacturer_id===q.manufacturer_id);return decision?.status==="selected"?<span className="quote-decision selected">Selected</span>:decision?.status==="not_selected"?<span className="quote-decision">Not selected</span>:<button className="quote-select-button" disabled={busy||q.status==="withdrawn"} onClick={()=>selectQuote(r.id,q.manufacturer_id)}>Select supplier</button>;})()}</td>
                   </tr>)}</tbody>
                 </table></div>
               </div> : <small className="quote-waiting">No quotations received yet. Your selected suppliers can respond from their workspaces.</small>}</div></div>)}
