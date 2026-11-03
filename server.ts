@@ -93,35 +93,6 @@ app.get("/api/products", async (_req, res) => {
     return res.json(Array.isArray(rows) ? rows : []);
   } catch { return res.status(503).json({ error: "Product catalogue is temporarily unavailable." }); }
 });
-app.post("/api/rfqs", rateLimit, async (req, res) => {
-  const { name, email, company, productType, quantity, targetPrice, deliveryCountry, materialSpecs, sampleRequired, targetDate, manufacturerIds, honeypot } = req.body ?? {};
-  if (honeypot) return res.status(201).json({ ok: true });
-  const ids = Array.isArray(manufacturerIds) ? [...new Set(manufacturerIds.filter((v: unknown) => typeof v === "string" && v.length > 0 && v.length <= 100))] : [];
-  const qty = typeof quantity === "number" ? quantity : Number(quantity);
-  if (!textField(name,120) || !textField(email,254) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
-      !textField(productType,160) || !Number.isInteger(qty) || qty < 1 || qty > 10000000 || !textField(deliveryCountry,100) ||
-      !optionalText(company,160) || !optionalText(targetPrice,120) || !optionalText(materialSpecs,3000) ||
-      typeof sampleRequired !== "boolean" || !optionalText(targetDate,10) || ids.length < 1 || ids.length > 5) {
-    return res.status(400).json({ error: "Check your contact details, quantity, delivery country and choose 1–5 suppliers." });
-  }
-  if (targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) return res.status(400).json({ error: "Please use a valid target date." });
-  if (!databaseReady) return res.status(503).json({ error: "The RFQ service is not configured yet. Your details have not been stored." });
-  try {
-    await supabase("rpc/submit_rfq", { method: "POST", body: {
-      p_buyer_name: name.trim(), p_buyer_email: email.trim(), p_company: String(company || "").trim(),
-      p_product_type: productType.trim(), p_quantity: qty, p_target_price: String(targetPrice || "").trim(),
-      p_delivery_country: deliveryCountry.trim(), p_material_specs: String(materialSpecs || "").trim(),
-      p_sample_required: sampleRequired, p_target_date: targetDate || null, p_manufacturer_ids: ids
-    } });
-    return res.status(201).json({ ok: true, supplierCount: ids.length });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (message.includes("Invalid RFQ fields") || message.includes("not published")) {
-      return res.status(400).json({ error: "Please review the RFQ details and selected suppliers." });
-    }
-    return res.status(503).json({ error: "We could not save the RFQ. Please try again later." });
-  }
-});
 app.post("/api/supplier-applications", rateLimit, async (req, res) => {
   const { company, website, location, products, moq, leadTime, evidence, contactPage, contactName, honeypot } = req.body ?? {};
   if (honeypot) return res.status(201).json({ ok: true });
