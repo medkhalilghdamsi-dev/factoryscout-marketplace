@@ -64,7 +64,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Enforce published/eligible supplier selection and prevent duplicate targets.
 - [ ] Enforce buyer ownership, assigned-supplier access and quote uniqueness at database level.
 - [ ] Validate quote currency, positive price, MOQ, lead time, validity date, status transitions and input limits.
-- [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh.
+- [x] Buyer/supplier conversation panel, message persistence UI, manual refresh and read-receipt update UI implemented (not yet E2E verified).\n- [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh verified with separate test identities.
 - [ ] Email notifications for signup, supplier approval, new RFQ, new quote and new message (with retries and opt-out).
 - [ ] Abuse controls: server-side rate limits in shared storage, honeypot/bot protection, request validation and audit trail.
 
