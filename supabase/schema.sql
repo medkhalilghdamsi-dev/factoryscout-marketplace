@@ -245,3 +245,81 @@ create policy "Suppliers can edit their own pending products" on public.products
   select 1 from public.supplier_accounts sa where sa.owner_id = (select auth.uid())
   and sa.status = 'approved' and sa.manufacturer_id = products.manufacturer_id
  ));
+
+
+-- Admin moderation. Promote the first platform owner manually after their account exists:
+-- update public.profiles set role = 'admin' where email = 'YOUR_REGISTERED_EMAIL';
+create schema if not exists private;
+revoke all on schema private from public;
+grant usage on schema private to authenticated;
+create or replace function private.is_factoryscout_admin()
+returns boolean language sql stable security definer set search_path = ''
+as $$
+ select exists (select 1 from public.profiles where id = (select auth.uid()) and role = 'admin');
+$$;
+revoke all on function private.is_factoryscout_admin() from public, anon;
+grant execute on function private.is_factoryscout_admin() to authenticated;
+
+drop policy if exists "Admins can read all profiles" on public.profiles;
+create policy "Admins can read all profiles" on public.profiles for select to authenticated
+ using ((select private.is_factoryscout_admin()));
+
+grant select, update on public.supplier_accounts to authenticated;
+drop policy if exists "Admins can review supplier accounts" on public.supplier_accounts;
+create policy "Admins can review supplier accounts" on public.supplier_accounts for all to authenticated
+ using ((select private.is_factoryscout_admin())) with check ((select private.is_factoryscout_admin()));
+
+grant select, insert, update on public.manufacturers to authenticated;
+drop policy if exists "Admins can manage manufacturers" on public.manufacturers;
+create policy "Admins can manage manufacturers" on public.manufacturers for all to authenticated
+ using ((select private.is_factoryscout_admin())) with check ((select private.is_factoryscout_admin()));
+
+grant select, update on public.products to authenticated;
+drop policy if exists "Admins can moderate all products" on public.products;
+create policy "Admins can moderate all products" on public.products for all to authenticated
+ using ((select private.is_factoryscout_admin())) with check ((select private.is_factoryscout_admin()));
+
+grant select, update on public.supplier_applications to authenticated;
+drop policy if exists "Admins can review supplier applications" on public.supplier_applications;
+create policy "Admins can review supplier applications" on public.supplier_applications for all to authenticated
+ using ((select private.is_factoryscout_admin())) with check ((select private.is_factoryscout_admin()));
+
+grant select, update on public.rfqs to authenticated;
+grant select on public.rfq_targets to authenticated;
+drop policy if exists "Admins can review RFQs" on public.rfqs;
+create policy "Admins can review RFQs" on public.rfqs for all to authenticated
+ using ((select private.is_factoryscout_admin())) with check ((select private.is_factoryscout_admin()));
+drop policy if exists "Admins can read RFQ targets" on public.rfq_targets;
+create policy "Admins can read RFQ targets" on public.rfq_targets for select to authenticated
+ using ((select private.is_factoryscout_admin()));
+
+grant select, update on public.enquiries to authenticated;
+drop policy if exists "Admins can review enquiries" on public.enquiries;
+create policy "Admins can review enquiries" on public.enquiries for all to authenticated
+ using ((select private.is_factoryscout_admin())) with check ((select private.is_factoryscout_admin()));
+
+create or replace function public.admin_approve_supplier_account(p_supplier_account_id uuid)
+returns text language plpgsql security invoker set search_path = ''
+as $$
+declare v_supplier public.supplier_accounts%rowtype; v_manufacturer_id text;
+begin
+ if not private.is_factoryscout_admin() then raise exception 'Not authorized'; end if;
+ select * into v_supplier from public.supplier_accounts where id = p_supplier_account_id for update;
+ if not found then raise exception 'Supplier account not found'; end if;
+ if v_supplier.status <> 'pending' then raise exception 'Supplier account is not pending'; end if;
+ v_manufacturer_id := v_supplier.slug;
+ if exists (select 1 from public.manufacturers where id = v_manufacturer_id) then
+  v_manufacturer_id := v_manufacturer_id || '-' || left(replace(gen_random_uuid()::text,'-',''),8);
+ end if;
+ insert into public.manufacturers (id,name,region,category,summary,capabilities,evidence,evidence_note,export_markets,status,website,is_published,verification_status)
+ values (v_manufacturer_id,v_supplier.company_name,v_supplier.location,array['Apparel'],coalesce(v_supplier.about,''),
+  array[]::text[],'Supplier-submitted',
+  'Supplier application reviewed by FactoryScout. Factory capabilities, capacity and certifications have not been independently audited.',
+  array[]::text[],'Approved listing - claims unverified',v_supplier.website,true,'unverified');
+ update public.supplier_accounts set manufacturer_id = v_manufacturer_id,status = 'approved',updated_at = now()
+ where id = p_supplier_account_id;
+ return v_manufacturer_id;
+end;
+$$;
+revoke all on function public.admin_approve_supplier_account(uuid) from public, anon;
+grant execute on function public.admin_approve_supplier_account(uuid) to authenticated;
