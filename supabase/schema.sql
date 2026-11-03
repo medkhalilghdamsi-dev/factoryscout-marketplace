@@ -449,7 +449,11 @@ create policy "Assigned suppliers can update own quotes" on public.supplier_quot
 
 drop policy if exists "Assigned suppliers can read their RFQ targets" on public.rfq_targets;
 create policy "Assigned suppliers can read their RFQ targets" on public.rfq_targets for select to authenticated using (manufacturer_id in (select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved'));
+alter table public.supplier_quotes drop constraint if exists supplier_quotes_minimum_order_check;
 alter table public.supplier_quotes add constraint supplier_quotes_minimum_order_check check (minimum_order is null or minimum_order > 0);
+alter table public.supplier_quotes drop constraint if exists supplier_quotes_lead_time_check;
 alter table public.supplier_quotes add constraint supplier_quotes_lead_time_check check (lead_time_days is null or lead_time_days between 1 and 730);
+alter table public.supplier_quotes drop constraint if exists supplier_quotes_notes_check;
 alter table public.supplier_quotes add constraint supplier_quotes_notes_check check (char_length(notes) <= 2000);
+alter table public.supplier_quotes drop constraint if exists supplier_quotes_status_check;
 alter table public.supplier_quotes add constraint supplier_quotes_status_check check (status in ('submitted','updated','withdrawn'));
