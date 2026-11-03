@@ -100,7 +100,7 @@ app.post("/api/supplier-applications", rateLimit, async (req, res) => {
 });
 async function start() {
   if (process.env.NODE_ENV === "production") {
-    const dist = path.join(root, "dist");
+    const dist = path.resolve(process.cwd(), "dist");
     app.use(express.static(dist));
     app.get("*", (_req, res) => res.sendFile(path.join(dist, "index.html")));
   } else {
