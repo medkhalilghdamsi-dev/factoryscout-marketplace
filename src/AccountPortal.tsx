@@ -28,6 +28,7 @@ export default function AccountPortal() {
   const [accountType,setAccountType] = useState<"buyer"|"supplier">("buyer");
   const [company,setCompany] = useState({company_name:"",website:"",location:"",about:"",contact_name:""});
   const [product,setProduct] = useState(blankProduct);
+  const [uploadingImage,setUploadingImage] = useState(false);
   const [adminSuppliers,setAdminSuppliers] = useState<any[]>([]);
   const [adminProducts,setAdminProducts] = useState<any[]>([]);
 
@@ -145,6 +146,25 @@ export default function AccountPortal() {
     setBusy(false);
   };
 
+  const uploadProductImage = async (event:React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !supabase || !user) return;
+    if (!["image/jpeg","image/png","image/webp"].includes(file.type)) { setMessage("Choose a JPG, PNG or WEBP image."); event.target.value=""; return; }
+    if (file.size > 5 * 1024 * 1024) { setMessage("Product images must be 5 MB or smaller."); event.target.value=""; return; }
+    setUploadingImage(true); setMessage("");
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,"-").slice(-100);
+    const path = user.id + "/" + Date.now() + "-" + safeName;
+    const {error} = await supabase.storage.from("product-images").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
+    if (error) setMessage("Image upload failed: " + error.message);
+    else {
+      const {data} = supabase.storage.from("product-images").getPublicUrl(path);
+      setProduct(current=>({...current,image_url:data.publicUrl}));
+      setMessage("Product image uploaded. Save the product listing to attach it.");
+    }
+    setUploadingImage(false);
+    event.target.value="";
+  };
+
   const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setMessage("You have signed out."); };
 
   return <>
@@ -194,9 +214,9 @@ export default function AccountPortal() {
                 <label>Materials (comma separated)<input value={product.materials} onChange={e=>setProduct({...product,materials:e.target.value})} placeholder="Cotton, recycled polyester"/></label>
                 <label>Techniques (comma separated)<input value={product.techniques} onChange={e=>setProduct({...product,techniques:e.target.value})} placeholder="Embroidery, screen printing"/></label>
                 <div className="account-form-grid"><label>MOQ (pieces)<input type="number" min="1" value={product.minimum_order} onChange={e=>setProduct({...product,minimum_order:e.target.value})}/></label><label>Lead time (days)<input type="number" min="1" max="730" value={product.lead_time_days} onChange={e=>setProduct({...product,lead_time_days:e.target.value})}/></label></div>
-                <label>Product image URL<input type="url" placeholder="https://" value={product.image_url} onChange={e=>setProduct({...product,image_url:e.target.value})}/></label>
+                <label>Product image<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingImage} onChange={uploadProductImage}/><small>JPG, PNG or WEBP · maximum 5 MB. {product.image_url ? "Image uploaded and ready to attach." : "Upload a clear product photo."}</small></label>
                 <label className="account-checkbox"><input type="checkbox" checked={product.sample_available} onChange={e=>setProduct({...product,sample_available:e.target.checked})}/> Samples available</label>
-                <button className="button primary full" disabled={busy}>{busy?"Submitting…":"Submit product for review ↗"}</button>
+                <button className="button primary full" disabled={busy||uploadingImage}>{busy?"Submitting…":uploadingImage?"Uploading image…":"Submit product for review ↗"}</button>
               </form>
             </> : <p className="account-copy">Once your company is approved and connected to its manufacturer record, you can upload products for moderation here.</p>}
           </>}
