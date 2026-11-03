@@ -21,5 +21,21 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Install browser test runner
+        run: npm install --no-save @playwright/test
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
       - name: Typecheck and build
         run: npm run build
+      - name: Test responsive layouts at real viewport sizes
+        run: npx playwright test
+      - name: Upload responsive screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-browser-qa
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
