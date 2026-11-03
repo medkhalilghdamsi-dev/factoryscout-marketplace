@@ -272,7 +272,7 @@ export default function AccountPortal() {
             {supplierRfqs.length===0 ? <p className="account-copy">No buyer requests have been assigned to your factory yet.</p> : supplierRfqs.map(r=>{
               const draft=quoteDrafts[r.id]||{unit_price:"",currency:"EUR",minimum_order:"",lead_time_days:"",sample_available:false,notes:""};
               const decision=(r.rfq_quote_decisions||[]).find((d:any)=>d.manufacturer_id===supplier.manufacturer_id);
-              return <div className="admin-review-item" key={r.id}><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()}</span>{decision?.status==="selected"&&<span className="quote-decision selected">Buyer selected your factory</span>}{decision?.status==="not_selected"&&<span className="quote-decision">Buyer selected another quotation</span>}<p>{r.material_specs||"No additional specifications supplied."}</p><div className="account-form">
+              return <div className="admin-review-item" key={r.id}><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()}</span>{decision?.status==="selected"?<p className="quote-decision selected">Your quotation has been selected. Contact the buyer through messages to confirm the next steps.</p>:<><p>{r.material_specs||"No additional specifications supplied."}</p><div className="account-form">
                 <label>Unit price<input type="number" min="0.0001" step="0.0001" value={draft.unit_price} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,unit_price:e.target.value}}))}/></label>
                 <label>Currency<select value={draft.currency} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,currency:e.target.value}}))}><option>EUR</option><option>USD</option><option>TND</option><option>GBP</option></select></label>
                 <label>Minimum order<input type="number" min="1" value={draft.minimum_order} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,minimum_order:e.target.value}}))}/></label>
@@ -280,7 +280,7 @@ export default function AccountPortal() {
                 <label>Notes<textarea rows={2} maxLength={2000} value={draft.notes} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,notes:e.target.value}}))}/></label>
                 <label className="account-checkbox"><input type="checkbox" checked={draft.sample_available} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,sample_available:e.target.checked}}))}/> Samples available</label>
                 <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button>
-              </div></div>;
+              </div></> }</div></div>;
             })}
           </div>}
           {profile?.role!=="admin" && profile?.account_type==="buyer" && <div className="buyer-workspace">
