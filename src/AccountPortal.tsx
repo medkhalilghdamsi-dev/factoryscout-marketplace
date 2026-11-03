@@ -28,6 +28,8 @@ export default function AccountPortal() {
   const [accountType,setAccountType] = useState<"buyer"|"supplier">("buyer");
   const [company,setCompany] = useState({company_name:"",website:"",location:"",about:"",contact_name:""});
   const [product,setProduct] = useState(blankProduct);
+  const [adminSuppliers,setAdminSuppliers] = useState<any[]>([]);
+  const [adminProducts,setAdminProducts] = useState<any[]>([]);
 
   const loadAccount = async (current:User|null) => {
     setUser(current);
@@ -53,6 +55,40 @@ export default function AccountPortal() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadAdminData = async () => {
+    if (!supabase) return;
+    const [s,p] = await Promise.all([
+      supabase.from("supplier_accounts").select("id,company_name,location,website,about,slug,created_at").eq("status","pending").order("created_at",{ascending:true}),
+      supabase.from("products").select("id,name,product_type,manufacturer_id,created_at").eq("status","pending").order("created_at",{ascending:true})
+    ]);
+    if (!s.error) setAdminSuppliers(s.data || []);
+    if (!p.error) setAdminProducts(p.data || []);
+  };
+  useEffect(() => { if (profile?.role === "admin") void loadAdminData(); }, [profile?.id,profile?.role]);
+
+  const approveSupplier = async (id:string) => {
+    if (!supabase) return;
+    setBusy(true); setMessage("");
+    const {error} = await supabase.rpc("admin_approve_supplier_account",{p_supplier_account_id:id});
+    if (error) setMessage(error.message);
+    else { setMessage("Supplier approved and manufacturer listing created."); await loadAdminData(); }
+    setBusy(false);
+  };
+  const rejectSupplier = async (id:string) => {
+    if (!supabase) return;
+    setBusy(true);
+    const {error} = await supabase.from("supplier_accounts").update({status:"rejected"}).eq("id",id);
+    if (error) setMessage(error.message); else { setMessage("Supplier application rejected."); await loadAdminData(); }
+    setBusy(false);
+  };
+  const moderateProduct = async (id:string,status:"published"|"rejected") => {
+    if (!supabase) return;
+    setBusy(true);
+    const {error} = await supabase.from("products").update({status}).eq("id",id);
+    if (error) setMessage(error.message); else { setMessage(status==="published"?"Product published.":"Product rejected."); await loadAdminData(); }
+    setBusy(false);
+  };
 
   const runAuth = async (event:React.FormEvent) => {
     event.preventDefault();
@@ -135,7 +171,8 @@ export default function AccountPortal() {
           <h2>Your<br/><em>workspace.</em></h2>
           <p className="account-copy">{user?.email}</p>
           <div className="account-status"><b>{profile?.account_type==="supplier"?"Supplier account":"Buyer account"}</b><span>{profile?.role==="admin"?"Administrator": "Standard member"}</span></div>
-          {profile?.account_type==="supplier" && !supplier && <>
+          {profile?.role==="admin" && <div className="admin-dashboard"><div className="account-status"><b>Admin moderation</b><span>Only accounts explicitly promoted by the platform owner can access these controls.</span></div><h3>Supplier applications ({adminSuppliers.length})</h3>{adminSuppliers.length===0?<p className="account-copy">No supplier applications waiting for review.</p>:adminSuppliers.map(s=><div className="admin-review-item" key={s.id}><b>{s.company_name}</b><span>{s.location} · {s.slug}</span><p>{s.about || "No company description submitted."}</p><div><button disabled={busy} onClick={()=>approveSupplier(s.id)}>Approve & create listing</button><button disabled={busy} onClick={()=>rejectSupplier(s.id)}>Reject</button></div></div>)}<h3>Product listings ({adminProducts.length})</h3>{adminProducts.length===0?<p className="account-copy">No product listings waiting for review.</p>:adminProducts.map(p=><div className="admin-review-item" key={p.id}><b>{p.name}</b><span>{p.product_type} · Manufacturer {p.manufacturer_id}</span><div><button disabled={busy} onClick={()=>moderateProduct(p.id,"published")}>Publish</button><button disabled={busy} onClick={()=>moderateProduct(p.id,"rejected")}>Reject</button></div></div>)}</div>}
+          {profile?.role!=="admin" && profile?.account_type==="supplier" && !supplier && <>
             <h3>Set up your supplier profile</h3>
             <form className="account-form" onSubmit={createSupplier}>
               <label>Company name<input required maxLength={180} value={company.company_name} onChange={e=>setCompany({...company,company_name:e.target.value})}/></label>
@@ -146,7 +183,7 @@ export default function AccountPortal() {
               <button className="button primary full" disabled={busy}>{busy?"Submitting…":"Submit supplier application ↗"}</button>
             </form>
           </>}
-          {profile?.account_type==="supplier" && supplier && <>
+          {profile?.role!=="admin" && profile?.account_type==="supplier" && supplier && <>
             <div className="supplier-review-card"><b>{supplier.company_name}</b><span>Storefront handle: {supplier.slug}</span><strong className={supplier.status==="approved"?"approved":""}>{supplier.status==="approved"?"Approved supplier":supplier.status==="rejected"?"Application needs changes":"Awaiting FactoryScout review"}</strong></div>
             {supplier.status==="approved" && supplier.manufacturer_id ? <>
               <h3>Submit a product listing</h3>
@@ -163,7 +200,7 @@ export default function AccountPortal() {
               </form>
             </> : <p className="account-copy">Once your company is approved and connected to its manufacturer record, you can upload products for moderation here.</p>}
           </>}
-          {profile?.account_type==="buyer" && <p className="account-copy">Your buyer workspace is ready. Persistent saved suppliers and buyer RFQ history are coming next.</p>}
+          {profile?.role!=="admin" && profile?.account_type==="buyer" && <p className="account-copy">Your buyer workspace is ready. Persistent saved suppliers and buyer RFQ history are coming next.</p>}
           <button className="account-switch" onClick={signOut}>Sign out</button>
         </>}
         {message && <p className="account-message" role="status">{message}</p>}
