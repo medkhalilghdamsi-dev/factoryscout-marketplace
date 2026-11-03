@@ -38,7 +38,7 @@ async function supabase(table: string, options: { method?: string; query?: strin
   if (!databaseReady) throw new Error("Database is not configured");
   const response = await fetch(`${supabaseUrl}/rest/v1/${table}${options.query ? `?${options.query}` : ""}`, {
     method: options.method || "GET",
-    headers: { apikey: publicApiKey!, Authorization: `Bearer ${publicApiKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
+    headers: { apikey: publicApiKey!, Authorization: `Bearer ${publicApiKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
     ...(options.body ? { body: JSON.stringify(options.body) } : {})
   });
   if (!response.ok) {
