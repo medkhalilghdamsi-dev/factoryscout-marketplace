@@ -13,8 +13,8 @@ create policy "Users can submit a pending supplier account"
  with check (
    (select auth.uid())=owner_id and status='pending' and manufacturer_id is null
    and (requested_manufacturer_id is null or (
-     exists(select 1 from public.manufacturers m where m.id=requested_manufacturer_id and m.is_published=true)
-     and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=requested_manufacturer_id and sa.status='approved')
+     exists(select 1 from public.manufacturers m where m.id=supplier_accounts.requested_manufacturer_id and m.is_published=true)
+     and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=supplier_accounts.requested_manufacturer_id and sa.status='approved')
    ))
  );
 drop policy if exists "Owners can edit pending supplier details" on public.supplier_accounts;
@@ -24,8 +24,8 @@ create policy "Owners can edit pending supplier details"
  with check (
    (select auth.uid())=owner_id and status='pending' and manufacturer_id is null
    and (requested_manufacturer_id is null or (
-     exists(select 1 from public.manufacturers m where m.id=requested_manufacturer_id and m.is_published=true)
-     and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=requested_manufacturer_id and sa.status='approved')
+     exists(select 1 from public.manufacturers m where m.id=supplier_accounts.requested_manufacturer_id and m.is_published=true)
+     and not exists(select 1 from public.supplier_accounts sa where sa.manufacturer_id=supplier_accounts.requested_manufacturer_id and sa.status='approved')
    ))
  );
 
