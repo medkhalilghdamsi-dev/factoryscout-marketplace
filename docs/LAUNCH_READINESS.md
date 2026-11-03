@@ -11,7 +11,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - React 19 + Vite frontend, Express API, Supabase Postgres/Auth/Storage, Render web service.
 - Render service: `factoryscout-marketplace`, Frankfurt, free plan; the latest confirmed live deployment at the time of this audit is commit `52d5750` (2026-11-03 16:12 UTC). This includes the supplier prospect pipeline UI. New API middleware hardening and additional tests are on GitHub main after that deployment and are pending a fresh Render deployment confirmation; do not assume they are live until the deployed commit matches.
 - GitHub main branch has responsive marketplace shell, supplier storefront route, global search/category navigation and Playwright responsive tests.
-- Live Supabase counts: 4 manufacturer rows, 5 researched supplier prospects, 0 products, 0 approved/pending supplier accounts, 0 supplier applications, 0 enquiries, 0 RFQs, 0 supplier quotes and 0 messages. The prospects are private admin research records, not marketplace suppliers.
+- Live Supabase counts: 4 manufacturer rows, 5 researched supplier prospects, 0 products, 0 approved/pending supplier accounts, 0 supplier applications, 0 enquiries, 0 RFQs, 0 supplier quotes and 0 messages. There are also 0 Auth users, 0 profiles and 0 admins; the guarded first-admin bootstrap is prepared in `supabase/bootstrap_first_admin.sql`, but the owner must first create and confirm their account and run it manually. The prospects are private admin research records, not marketplace suppliers.
 - All 4 seeded manufacturer profiles are published while marked `unverified`; they are research leads, not verified suppliers. Their public API records correctly expose `rfqEnabled: false`.
 - No Supabase Edge Functions are deployed.
 - Existing schema includes manufacturer/product catalogue, RFQ/targets, buyer/supplier accounts, saved manufacturers, quotations, moderation and product image storage. Live end-to-end behavior has not yet been proven.
@@ -85,7 +85,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 **Pass condition:** A complete buyer-to-multiple-supplier-to-quote-to-message workflow passes with at least two supplier test accounts.
 
 ### E. Administration and trust operations
-- [ ] Secure first-owner admin bootstrap; no public role promotion.
+- [ ] Complete first-owner bootstrap: owner creates and confirms their account, then runs `supabase/bootstrap_first_admin.sql` in the Supabase SQL Editor. Guarded one-time script is prepared; no public role promotion exists.
 - [ ] Admin dashboard for supplier verification, supplier applications, products, RFQs, quotes, reports and users.
 - [ ] Review log with reviewer, timestamp, evidence source, decision and notes.
 - [x] Admin verification queue supports claim review, evidence review and independent-verification decisions; the final status requires a public evidence URL and reviewer note, and changes are recorded in the audit log.
