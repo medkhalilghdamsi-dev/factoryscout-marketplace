@@ -1,4 +1,5 @@
 import express, { type Request, type Response, type NextFunction } from "express";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer as createViteServer } from "vite";
@@ -83,6 +84,37 @@ app.post("/api/enquiries", rateLimit, async (req, res) => {
     const record = Array.isArray(inserted) ? inserted[0] : null;
     return res.status(201).json({ ok: true, id: record?.id });
   } catch { return res.status(503).json({ error: "We could not save your enquiry. Please try again later." }); }
+});
+app.get("/api/products", async (_req, res) => {
+  if (!databaseReady) return res.json([]);
+  try {
+    const rows = await supabase("products", { query: "select=*&status=eq.published&order=created_at.desc" });
+    return res.json(Array.isArray(rows) ? rows : []);
+  } catch { return res.status(503).json({ error: "Product catalogue is temporarily unavailable." }); }
+});
+app.post("/api/rfqs", rateLimit, async (req, res) => {
+  const { name, email, company, productType, quantity, targetPrice, deliveryCountry, materialSpecs, sampleRequired, targetDate, manufacturerIds, honeypot } = req.body ?? {};
+  if (honeypot) return res.status(201).json({ ok: true });
+  const ids = Array.isArray(manufacturerIds) ? [...new Set(manufacturerIds.filter((v: unknown) => typeof v === "string" && v.length > 0 && v.length <= 100))] : [];
+  const qty = typeof quantity === "number" ? quantity : Number(quantity);
+  if (!textField(name,120) || !textField(email,254) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) ||
+      !textField(productType,160) || !Number.isInteger(qty) || qty < 1 || qty > 10000000 || !textField(deliveryCountry,100) ||
+      !optionalText(company,160) || !optionalText(targetPrice,120) || !optionalText(materialSpecs,3000) ||
+      typeof sampleRequired !== "boolean" || !optionalText(targetDate,10) || ids.length < 1 || ids.length > 5) {
+    return res.status(400).json({ error: "Check your contact details, quantity, delivery country and choose 1–5 suppliers." });
+  }
+  if (targetDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(targetDate)) return res.status(400).json({ error: "Please use a valid target date." });
+  if (!databaseReady) return res.status(503).json({ error: "The RFQ service is not configured yet. Your details have not been stored." });
+  try {
+    for (const id of ids) {
+      const found = await supabase("manufacturers", { query: `select=id&id=eq.${encodeURIComponent(id)}&is_published=eq.true` });
+      if (!Array.isArray(found) || found.length === 0) return res.status(400).json({ error: "One selected supplier is not currently published. Refresh and try again." });
+    }
+    const id = randomUUID();
+    await supabase("rfqs", { method: "POST", body: { id, buyer_name: name.trim(), buyer_email: email.trim(), company: String(company || "").trim(), product_type: productType.trim(), quantity: qty, target_price: String(targetPrice || "").trim(), delivery_country: deliveryCountry.trim(), material_specs: String(materialSpecs || "").trim(), sample_required: sampleRequired, target_date: targetDate || null } });
+    await supabase("rfq_targets", { method: "POST", body: ids.map(manufacturer_id => ({ rfq_id: id, manufacturer_id })) });
+    return res.status(201).json({ ok: true, id, supplierCount: ids.length });
+  } catch { return res.status(503).json({ error: "We could not save the RFQ. Please try again later." }); }
 });
 app.post("/api/supplier-applications", rateLimit, async (req, res) => {
   const { company, website, location, products, moq, leadTime, evidence, contactPage, contactName, honeypot } = req.body ?? {};
