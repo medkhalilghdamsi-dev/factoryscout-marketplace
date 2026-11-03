@@ -18,7 +18,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 
 ## Audit findings to resolve before launch
 
-1. **RFQ submission security has been hardened.** Anonymous execution of the legacy `submit_rfq` RPC and anonymous inserts into `rfqs`/`rfq_targets` are revoked. The authenticated `submit_rfq_for_buyer` RPC validates request fields, requires a buyer account, validates published supplier targets, and creates RFQ targets/conversations atomically. Live privilege checks confirm anonymous users cannot execute either RFQ RPC or insert into RFQ tables; authenticated users can execute the buyer RPC.
+1. **RFQ submission permissions and validation are hardened, but the live journey still needs E2E testing.** Anonymous execution of the legacy `submit_rfq` RPC and anonymous inserts into `rfqs`/`rfq_targets` are revoked. The authenticated `submit_rfq_for_buyer` RPC validates request fields, requires a buyer account, validates published supplier targets, and creates RFQ targets/conversations atomically. The required authenticated insert grants are now present and the RLS policies restrict those writes to buyer accounts. Live privilege checks confirm anonymous users cannot insert into RFQ tables or execute either RFQ RPC.
 2. **Public enquiry and supplier-application abuse controls remain open.** These routes still accept anonymous submissions under narrowly scoped RLS policies and currently rely on an in-memory Express rate limiter. Add shared rate limiting, bot protection, validation, and operational monitoring before launch.
 3. **Configuration example is aligned.** `.env.example` now documents the server-side `SUPABASE_ANON_KEY` used by `server.ts`; the browser uses only the Vite publishable key. Both remain subject to RLS. Never expose a service-role secret to the browser.
 4. **README has been updated** to describe the buyer/supplier portal, product catalogue, RFQs, quotations, messaging, moderation and deployment setup.
@@ -73,6 +73,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [x] Enforce one selected supplier per RFQ; selection is transactional and limited to the owning buyer account.
 - [ ] Validate quote currency, positive price, MOQ, lead time, validity date, status transitions and input limits.
 - [x] Buyer/supplier conversation panel, message persistence UI, manual refresh and read-receipt update UI implemented (not yet E2E verified).
+- [x] Conversation/message table access is participant-scoped; message creation and read-receipt updates have column-level grants.
 - [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh verified with separate test identities.
 - [ ] Email notifications for signup, supplier approval, new RFQ, new quote and new message (with retries and opt-out).
 - [ ] Abuse controls: shared server-side rate limits, bot protection, request validation and audit trail for public enquiry and supplier-application endpoints. RFQ submission now requires an authenticated buyer.
