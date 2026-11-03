@@ -32,6 +32,9 @@ export default function AccountPortal() {
   const [adminSuppliers,setAdminSuppliers] = useState<any[]>([]);
   const [adminProducts,setAdminProducts] = useState<any[]>([]);
   const [savedManufacturers,setSavedManufacturers] = useState<any[]>([]);
+  const [buyerRfqs,setBuyerRfqs] = useState<any[]>([]);
+  const [supplierRfqs,setSupplierRfqs] = useState<any[]>([]);
+  const [quoteDrafts,setQuoteDrafts] = useState<Record<string,{unit_price:string;currency:string;minimum_order:string;lead_time_days:string;sample_available:boolean;notes:string}>>({});
 
   const loadAccount = async (current:User|null) => {
     setUser(current);
@@ -48,7 +51,7 @@ export default function AccountPortal() {
     else setProfile(p.data as Profile|null);
     if (s.error && s.error.code !== "PGRST116") setMessage("Supplier workspace could not be loaded.");
     else setSupplier(s.data as SupplierAccount|null);
-    if (!saved.error) setSavedManufacturers(saved.data || []);
+    if (!saved.error) setSavedManufacturers(saved.data || []);\n    if (p.data?.account_type === "buyer") {\n      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets(manufacturer_id),supplier_quotes(id,manufacturer_id,unit_price,currency,minimum_order,lead_time_days,sample_available,notes,status,created_at)").eq("buyer_id",current.id).order("created_at",{ascending:false});\n      if (!error) setBuyerRfqs(data || []);\n    }\n    if (s.data?.status === "approved" && s.data?.manufacturer_id) {\n      const {data,error} = await supabase.from("rfqs").select("*,rfq_targets!inner(manufacturer_id)").eq("rfq_targets.manufacturer_id",s.data.manufacturer_id).order("created_at",{ascending:false});\n      if (!error) setSupplierRfqs(data || []);\n    }
   };
 
   useEffect(() => {
@@ -176,6 +179,23 @@ export default function AccountPortal() {
     else setSavedManufacturers(rows=>rows.filter(row=>row.manufacturer_id!==manufacturerId));
   };
 
+  const submitQuote = async (rfqId:string, manufacturerId:string) => {
+    if (!supabase || !user) return;
+    const draft = quoteDrafts[rfqId];
+    if (!draft?.unit_price || Number(draft.unit_price) <= 0) { setMessage("Enter a valid unit price before submitting."); return; }
+    setBusy(true); setMessage("");
+    const {error} = await supabase.from("supplier_quotes").upsert({
+      rfq_id:rfqId, manufacturer_id:manufacturerId, supplier_owner_id:user.id,
+      unit_price:Number(draft.unit_price), currency:draft.currency,
+      minimum_order:draft.minimum_order?Number(draft.minimum_order):null,
+      lead_time_days:draft.lead_time_days?Number(draft.lead_time_days):null,
+      sample_available:draft.sample_available, notes:draft.notes.trim(), status:"submitted", updated_at:new Date().toISOString()
+    },{onConflict:"rfq_id,manufacturer_id"});
+    if (error) setMessage("Quote could not be submitted: "+error.message);
+    else setMessage("Your quotation has been sent to the buyer.");
+    setBusy(false);
+  };
+
   const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setMessage("You have signed out."); };
 
   return <>
@@ -231,10 +251,26 @@ export default function AccountPortal() {
               </form>
             </> : <p className="account-copy">Once your company is approved and connected to its manufacturer record, you can upload products for moderation here.</p>}
           </>}
+          {profile?.role!=="admin" && profile?.account_type==="supplier" && supplier?.status==="approved" && <div className="buyer-workspace">
+            <h3>RFQs matched to your factory ({supplierRfqs.length})</h3>
+            {supplierRfqs.length===0 ? <p className="account-copy">No buyer requests have been assigned to your factory yet.</p> : supplierRfqs.map(r=>{
+              const draft=quoteDrafts[r.id]||{unit_price:"",currency:"EUR",minimum_order:"",lead_time_days:"",sample_available:false,notes:""};
+              return <div className="admin-review-item" key={r.id}><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()}</span><p>{r.material_specs||"No additional specifications supplied."}</p><div className="account-form">
+                <label>Unit price<input type="number" min="0.0001" step="0.0001" value={draft.unit_price} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,unit_price:e.target.value}}))}/></label>
+                <label>Currency<select value={draft.currency} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,currency:e.target.value}}))}><option>EUR</option><option>USD</option><option>TND</option><option>GBP</option></select></label>
+                <label>Minimum order<input type="number" min="1" value={draft.minimum_order} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,minimum_order:e.target.value}}))}/></label>
+                <label>Lead time (days)<input type="number" min="1" max="730" value={draft.lead_time_days} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,lead_time_days:e.target.value}}))}/></label>
+                <label>Notes<textarea rows={2} maxLength={2000} value={draft.notes} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,notes:e.target.value}}))}/></label>
+                <label className="account-checkbox"><input type="checkbox" checked={draft.sample_available} onChange={e=>setQuoteDrafts(v=>({...v,[r.id]:{...draft,sample_available:e.target.checked}}))}/> Samples available</label>
+                <button disabled={busy} onClick={()=>submitQuote(r.id,supplier.manufacturer_id!)}>Send quotation ↗</button>
+              </div></div>;
+            })}
+          </div>}
           {profile?.role!=="admin" && profile?.account_type==="buyer" && <div className="buyer-workspace">
             <h3>Saved manufacturers ({savedManufacturers.length})</h3>
             {savedManufacturers.length===0 ? <p className="account-copy">Your saved suppliers will appear here. Browse the directory and tap the heart on a factory profile to keep it in your shortlist.</p> : savedManufacturers.map(row=><div className="saved-manufacturer-row" key={row.manufacturer_id}><div><b>{row.manufacturers?.name || row.manufacturer_id}</b><span>{row.manufacturers?.region || "FactoryScout supplier"}</span></div><button disabled={busy} onClick={()=>removeSavedManufacturer(row.manufacturer_id)}>Remove</button></div>)}
-            <p className="account-copy">RFQ history and supplier replies are the next buyer-workspace features.</p>
+            <h3>My requests for quotation ({buyerRfqs.length})</h3>
+            {buyerRfqs.length===0 ? <p className="account-copy">Your submitted RFQs and supplier replies will appear here.</p> : buyerRfqs.map(r=><div className="saved-manufacturer-row" key={r.id}><div><b>{r.product_type} · {Number(r.quantity).toLocaleString()} units</b><span>{r.delivery_country} · {new Date(r.created_at).toLocaleDateString()} · {r.status}</span><span>{(r.rfq_targets||[]).length} suppliers contacted · {(r.supplier_quotes||[]).length} quotations received</span>{(r.supplier_quotes||[]).map((q:any)=><small key={q.id}>{q.currency} {q.unit_price} / unit · MOQ {q.minimum_order||"—"} · {q.lead_time_days||"—"} days · {q.status}</small>)}</div></div>)}
           </div>}
           <button className="account-switch" onClick={signOut}>Sign out</button>
         </>}
