@@ -1,0 +1,62 @@
+name: Manufacturer listing request
+description: Submit your factory for review in the FactoryScout directory.
+title: "[Manufacturer listing] "
+labels: ["manufacturer-submission"]
+body:
+  - type: markdown
+    attributes:
+      value: "FactoryScout reviews public information and supplier-provided evidence before publishing a profile. Submission does not guarantee listing or verification."
+  - type: input
+    id: company
+    attributes:
+      label: Factory / company name
+      placeholder: Registered or trading name
+    validations:
+      required: true
+  - type: input
+    id: website
+    attributes:
+      label: Official website
+      placeholder: https://
+  - type: input
+    id: location
+    attributes:
+      label: Factory location
+      placeholder: City, country
+    validations:
+      required: true
+  - type: textarea
+    id: products
+    attributes:
+      label: Products and production capabilities
+      placeholder: Garment types, processes, machinery, specialisms
+    validations:
+      required: true
+  - type: input
+    id: moq
+    attributes:
+      label: Minimum order quantity
+      placeholder: Include units and whether per style / colour
+  - type: input
+    id: lead_time
+    attributes:
+      label: Typical lead time
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and certifications
+      description: Share links to capability documents, certificates, factory photos or other supporting material. Do not post confidential documents publicly.
+  - type: input
+    id: contact
+    attributes:
+      label: Business contact email
+      description: This issue is public. Only provide an address intended for business enquiries.
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Confirmation
+      options:
+        - label: I am authorised to submit this factory information and understand this request will be publicly visible.
+          required: true
