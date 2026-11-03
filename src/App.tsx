@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import AccountPortal, { supabase } from "./AccountPortal";
+import AccountPortal from "./AccountPortal";
+import { supabase } from "./supabaseClient";
 
 type Manufacturer = {
   id: string; name: string; region: string; category: string[]; summary: string;
