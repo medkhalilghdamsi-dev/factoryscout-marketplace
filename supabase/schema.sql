@@ -476,7 +476,7 @@ drop policy if exists "RFQ participants can read conversations" on public.rfq_co
 create policy "RFQ participants can read conversations" on public.rfq_conversations for select to authenticated using ((select auth.uid())=buyer_id or (select auth.uid())=supplier_owner_id);
 drop policy if exists "RFQ participants can open conversations" on public.rfq_conversations;
 create policy "RFQ participants can open conversations" on public.rfq_conversations for insert to authenticated with check (
- ((select auth.uid())=buyer_id and exists(select 1 from public.rfqs r where r.id=rfq_conversations.rfq_id and r.buyer_id=rfq_conversations.buyer_id))
+ ((select auth.uid())=buyer_id and exists(select 1 from public.rfqs r join public.rfq_targets t on t.rfq_id=r.id join public.supplier_accounts sa on sa.manufacturer_id=t.manufacturer_id where r.id=rfq_conversations.rfq_id and t.manufacturer_id=rfq_conversations.manufacturer_id and r.buyer_id=rfq_conversations.buyer_id and sa.owner_id=rfq_conversations.supplier_owner_id and sa.status='approved'))
  or ((select auth.uid())=supplier_owner_id and exists(select 1 from public.rfqs r join public.rfq_targets t on t.rfq_id=r.id join public.supplier_accounts sa on sa.manufacturer_id=t.manufacturer_id where r.id=rfq_conversations.rfq_id and t.manufacturer_id=rfq_conversations.manufacturer_id and r.buyer_id=rfq_conversations.buyer_id and sa.owner_id=rfq_conversations.supplier_owner_id and sa.status='approved'))
 );
 create table if not exists public.rfq_messages (
