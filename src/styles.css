@@ -749,3 +749,10 @@ input,select,textarea{font-size:16px}:focus-visible{outline:3px solid #a8bb68!im
 .quote-status{display:inline-block;padding:3px 7px;border-radius:99px;background:#edf2ec;color:#42574a;font-size:10px;text-transform:capitalize;white-space:nowrap}
 .quote-waiting{display:block;margin-top:10px;color:#68736b}
 @media(max-width:640px){.quote-comparison{margin-left:-4px;margin-right:-4px;padding:10px}}
+
+/* Buyer supplier-selection and supplier outcome states */
+.quote-select-button{display:block;margin-top:7px;padding:7px 10px;border:1px solid #9aa99d;border-radius:6px;background:#fff;color:#263d30;font-size:11px;font-weight:650;white-space:nowrap}
+.quote-select-button:hover:not(:disabled){background:#edf3ed;border-color:#526b59}
+.quote-select-button:disabled{opacity:.5;cursor:not-allowed}
+.quote-decision{display:inline-flex;align-items:center;margin-top:6px;padding:4px 8px;border-radius:5px;background:#f0f1ed;color:#59645b;font-size:11px;font-weight:650}
+.quote-decision.selected{background:#e4efe5;color:#245a32}
