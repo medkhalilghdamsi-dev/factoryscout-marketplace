@@ -55,3 +55,43 @@ test("supplier storefront is directly reachable on mobile without horizontal ove
   expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(391);
   await page.screenshot({ path: "test-results/screenshots/storefront-390.png", fullPage: true });
 });
+
+test("shareable product detail pages show specifications and prefill a product RFQ", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const product = {
+    id: "test-heavyweight-hoodie",
+    manufacturer_id: "les-ateliers-bs",
+    name: "Heavyweight Hoodie",
+    product_type: "Streetwear",
+    description: "A supplier-listed heavyweight cotton hoodie with an embroidered chest mark.",
+    materials: ["Organic cotton", "Recycled polyester"],
+    techniques: ["Embroidery"],
+    minimum_order: 100,
+    sample_available: true,
+    lead_time_days: 45,
+    image_url: null,
+    evidence: "Supplier-submitted",
+    manufacturers: { name: "Les Ateliers BS", region: "La Soukra, Ariana" }
+  };
+  await page.route("**/api/products", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([product])
+  }));
+  await page.goto("/products/test-heavyweight-hoodie");
+  await expect(page.getByRole("heading", { name: "Heavyweight Hoodie" })).toBeVisible();
+  await expect(page.getByText("Organic cotton")).toBeVisible();
+  await expect(page.getByText("100 pieces")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Request a quotation/ })).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth
+  }));
+  expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(391);
+  expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(391);
+  await page.getByRole("button", { name: /Request a quotation/ }).click();
+  await expect(page.locator(".rfq-modal")).toBeVisible();
+  await expect(page.getByLabel("Product type")).toHaveValue("Streetwear");
+  await expect(page.locator(".rfq-suppliers input[type='checkbox']").first()).toBeChecked();
+});
