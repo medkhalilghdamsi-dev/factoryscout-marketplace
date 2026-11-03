@@ -12,13 +12,13 @@ app.use(express.json({ limit: "24kb" }));
 type Manufacturer = {
   id: string; name: string; region: string; category: string[]; summary: string;
   capabilities: string[]; moq: string; leadTime: string; evidence: string;
-  evidenceNote: string; exportMarkets: string[]; status: string; website?: string;
+  evidenceNote: string; exportMarkets: string[]; status: string; rfqEnabled: boolean; website?: string;
 };
 const seed: Manufacturer[] = [
-  {id:"les-ateliers-bs",name:"Les Ateliers BS",region:"La Soukra, Ariana",category:["Premium ready-to-wear","Woven","Denim"],summary:"Tunisian garment workshop with a sample room and capabilities across premium ready-to-wear, woven garments and selected embellishment work.",capabilities:["Pattern and sample room","Woven garments","Denim","Pleating","Embroidery"],moq:"100–20,000 pieces (supplier-published range)",leadTime:"Approximately 8 weeks after sample approval (published)",evidence:"Supplier-published",evidenceNote:"Capabilities and figures are based on public supplier information; facility, current capacity and commercial terms have not been independently audited.",exportMarkets:["International export"],status:"Review required"},
+  {id:"les-ateliers-bs",name:"Les Ateliers BS",region:"La Soukra, Ariana",category:["Premium ready-to-wear","Woven","Denim"],summary:"Tunisian garment workshop with a sample room and capabilities across premium ready-to-wear, woven garments and selected embellishment work.",capabilities:["Pattern and sample room","Woven garments","Denim","Pleating","Embroidery"],moq:"100–20,000 pieces (supplier-published range)",leadTime:"Approximately 8 weeks after sample approval (published)",evidence:"Supplier-published",evidenceNote:"Capabilities and figures are based on public supplier information; facility, current capacity and commercial terms have not been independently audited.",exportMarkets:["International export"],status:"Review required",rfqEnabled:false},
   {id:"subli-tunis",name:"SubliTunis",region:"Sousse",category:["Sportswear","Swimwear","Workwear"],summary:"Garment and sublimation workshops with stated experience in sportswear, swimwear, workwear and medical clothing.",capabilities:["Sublimation printing","Sportswear","Swimwear","Leggings","Workwear"],moq:"Not publicly confirmed",leadTime:"Not publicly confirmed",evidence:"Supplier-published",evidenceNote:"Workshop and staffing details are supplier-published. MOQ, sample process, current capacity and certifications require direct confirmation.",exportMarkets:["Export-oriented (supplier-stated)"],status:"Review required"},
   {id:"goldtex",name:"Goldtex",region:"Bizerte",category:["Fashion apparel","Sportswear","Technical apparel"],summary:"Tunisian apparel manufacturer publicly describing fashion, sportswear and technical garment production.",capabilities:["Fashion apparel","Sportswear","Technical apparel"],moq:"Not publicly confirmed",leadTime:"Not publicly confirmed",evidence:"Supplier-published",evidenceNote:"Production scale and certification claims require documentary review. No independent factory audit has been completed by FactoryScout.",exportMarkets:["Not confirmed"],status:"Review required"},
-  {id:"atll",name:"ATLL",region:"Casablanca, Morocco",category:["Streetwear","Hoodies","Apparel"],summary:"Moroccan apparel manufacturer included as a regional comparison option, not a Tunisian factory listing.",capabilities:["Hoodies","Embroidery","Garment production"],moq:"200 pieces per model (published)",leadTime:"Not publicly confirmed",evidence:"Supplier-published",evidenceNote:"Public website claims require direct confirmation; no independent audit has been completed by FactoryScout.",exportMarkets:["Not confirmed"],status:"Regional comparison"}
+  {id:"atll",name:"ATLL",region:"Casablanca, Morocco",category:["Streetwear","Hoodies","Apparel"],summary:"Moroccan apparel manufacturer included as a regional comparison option, not a Tunisian factory listing.",capabilities:["Hoodies","Embroidery","Garment production"],moq:"200 pieces per model (published)",leadTime:"Not publicly confirmed",evidence:"Supplier-published",evidenceNote:"Public website claims require direct confirmation; no independent audit has been completed by FactoryScout.",exportMarkets:["Not confirmed"],status:"Regional comparison",rfqEnabled:false}
 ];
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const publicApiKey = process.env.SUPABASE_ANON_KEY;
@@ -60,13 +60,13 @@ function mapManufacturer(row: any): Manufacturer {
   return { id: row.id, name: row.name, region: row.region, category: row.category || [], summary: row.summary || "",
     capabilities: row.capabilities || [], moq: row.moq || "Not publicly confirmed", leadTime: row.lead_time || "Not publicly confirmed",
     evidence: row.evidence || "Supplier-published", evidenceNote: row.evidence_note || "", exportMarkets: row.export_markets || [],
-    status: row.status || "Review required", ...(row.website ? { website: row.website } : {}) };
+    status: row.status || "Review required", rfqEnabled: (Array.isArray(row.supplier_accounts) ? row.supplier_accounts : row.supplier_accounts ? [row.supplier_accounts] : []).some((account: any) => account.status === "approved"), ...(row.website ? { website: row.website } : {}) };
 }
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "FactoryScout Marketplace", version: "0.2.0", database: databaseReady ? "configured" : "not_configured" }));
 app.get("/api/manufacturers", async (_req, res) => {
   if (!databaseReady) return res.json(seed);
   try {
-    const rows = await supabase("manufacturers", { query: "select=*&is_published=eq.true&order=name.asc" });
+    const rows = await supabase("manufacturers", { query: "select=*,supplier_accounts(status)&is_published=eq.true&order=name.asc" });
     return res.json(Array.isArray(rows) ? rows.map(mapManufacturer) : []);
   } catch { return res.status(503).json({ error: "Manufacturer directory is temporarily unavailable." }); }
 });
