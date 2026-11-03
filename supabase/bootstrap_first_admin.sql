@@ -19,10 +19,11 @@ begin
   select id, coalesce(raw_user_meta_data->>'full_name','FactoryScout Owner')
     into v_owner_id, v_owner_name
   from auth.users
-  where lower(email) = v_owner_email;
+  where lower(email) = v_owner_email
+    and email_confirmed_at is not null;
 
   if v_owner_id is null then
-    raise exception 'No Supabase Auth user found for %. Create and confirm the owner account first.', v_owner_email;
+    raise exception 'No confirmed Supabase Auth user found for %. Create the owner account and confirm its email first.', v_owner_email;
   end if;
 
   insert into public.profiles(id,email,full_name,account_type,role)
