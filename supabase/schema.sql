@@ -157,3 +157,91 @@ revoke all on function public.submit_rfq(text,text,text,text,integer,text,text,t
 grant execute on function public.submit_rfq(text,text,text,text,integer,text,text,text,boolean,date,text[]) to anon;
 grant insert on public.rfqs, public.rfq_targets to anon;
 revoke insert on public.rfqs, public.rfq_targets from authenticated;
+
+
+-- Buyer and supplier accounts. The role column is deliberately not user-editable.
+create table if not exists public.profiles (
+ id uuid primary key references auth.users(id) on delete cascade,
+ email text, full_name text not null default '',
+ account_type text not null default 'buyer' check (account_type in ('buyer','supplier')),
+ role text not null default 'user' check (role in ('user','admin')),
+ created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+revoke all on public.profiles from anon, authenticated;
+grant select on public.profiles to authenticated;
+drop policy if exists "Users can read their own profile" on public.profiles;
+create policy "Users can read their own profile" on public.profiles
+ for select to authenticated using ((select auth.uid()) = id);
+
+create or replace function public.handle_new_factoryscout_user()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare requested_type text;
+begin
+ requested_type := case when new.raw_user_meta_data ->> 'account_type' = 'supplier' then 'supplier' else 'buyer' end;
+ insert into public.profiles (id,email,full_name,account_type,role)
+ values (new.id,new.email,coalesce(new.raw_user_meta_data ->> 'full_name',''),requested_type,'user')
+ on conflict (id) do nothing;
+ return new;
+end;
+$$;
+revoke all on function public.handle_new_factoryscout_user() from public, anon, authenticated;
+drop trigger if exists on_factoryscout_auth_user_created on auth.users;
+create trigger on_factoryscout_auth_user_created after insert on auth.users
+ for each row execute function public.handle_new_factoryscout_user();
+
+create table if not exists public.supplier_accounts (
+ id uuid primary key default gen_random_uuid(),
+ owner_id uuid not null unique references auth.users(id) on delete cascade,
+ manufacturer_id text unique references public.manufacturers(id),
+ company_name text not null check (char_length(company_name) between 2 and 180),
+ slug text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(slug) between 2 and 90),
+ website text, location text not null check (char_length(location) between 2 and 160),
+ about text not null default '' check (char_length(about) <= 3000),
+ contact_name text, status text not null default 'pending' check (status in ('pending','approved','rejected')),
+ created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create index if not exists supplier_accounts_status_idx on public.supplier_accounts(status);
+alter table public.supplier_accounts enable row level security;
+revoke all on public.supplier_accounts from anon, authenticated;
+grant select on public.supplier_accounts to anon, authenticated;
+grant insert (owner_id,company_name,slug,website,location,about,contact_name) on public.supplier_accounts to authenticated;
+grant update (company_name,slug,website,location,about,contact_name) on public.supplier_accounts to authenticated;
+drop policy if exists "Supplier owners can read their account" on public.supplier_accounts;
+create policy "Supplier owners can read their account" on public.supplier_accounts
+ for select to authenticated using ((select auth.uid()) = owner_id);
+drop policy if exists "Approved supplier storefronts are public" on public.supplier_accounts;
+create policy "Approved supplier storefronts are public" on public.supplier_accounts
+ for select to anon, authenticated using (status = 'approved');
+drop policy if exists "Users can submit a pending supplier account" on public.supplier_accounts;
+create policy "Users can submit a pending supplier account" on public.supplier_accounts
+ for insert to authenticated with check ((select auth.uid()) = owner_id and status = 'pending' and manufacturer_id is null);
+drop policy if exists "Owners can edit pending supplier details" on public.supplier_accounts;
+create policy "Owners can edit pending supplier details" on public.supplier_accounts
+ for update to authenticated using ((select auth.uid()) = owner_id and status = 'pending')
+ with check ((select auth.uid()) = owner_id and status = 'pending' and manufacturer_id is null);
+
+alter table public.products add column if not exists owner_id uuid references auth.users(id) on delete cascade;
+create index if not exists products_owner_idx on public.products(owner_id);
+grant select on public.products to authenticated;
+grant insert (manufacturer_id,owner_id,name,product_type,description,materials,techniques,minimum_order,sample_available,lead_time_days,image_url,evidence) on public.products to authenticated;
+grant update (name,product_type,description,materials,techniques,minimum_order,sample_available,lead_time_days,image_url,evidence) on public.products to authenticated;
+drop policy if exists "Authenticated users can view published product listings" on public.products;
+create policy "Authenticated users can view published product listings" on public.products
+ for select to authenticated using (status = 'published' or owner_id = (select auth.uid()));
+drop policy if exists "Approved suppliers can submit their own products" on public.products;
+create policy "Approved suppliers can submit their own products" on public.products
+ for insert to authenticated with check (
+  owner_id = (select auth.uid()) and status = 'pending' and exists (
+   select 1 from public.supplier_accounts sa where sa.owner_id = (select auth.uid())
+   and sa.status = 'approved' and sa.manufacturer_id = products.manufacturer_id
+  )
+ );
+drop policy if exists "Suppliers can edit their own pending products" on public.products;
+create policy "Suppliers can edit their own pending products" on public.products
+ for update to authenticated using (owner_id = (select auth.uid()) and status = 'pending')
+ with check (owner_id = (select auth.uid()) and status = 'pending' and exists (
+  select 1 from public.supplier_accounts sa where sa.owner_id = (select auth.uid())
+  and sa.status = 'approved' and sa.manufacturer_id = products.manufacturer_id
+ ));
