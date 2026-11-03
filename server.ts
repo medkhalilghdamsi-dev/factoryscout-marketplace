@@ -2,6 +2,8 @@ import express from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
+import { createServer as createViteServer } from "vite";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -22,20 +24,26 @@ app.get("/api/manufacturers", (_req,res)=>res.json(manufacturers));
 app.post("/api/enquiries", (req,res)=>{
   const {manufacturerId,name,email,company,product,quantity,details} = req.body ?? {};
   if (![manufacturerId,name,email,product].every(v=>typeof v==="string" && v.trim().length>0)) return res.status(400).json({error:"Missing required fields"});
-  if (name.length>120 || email.length>254 || company?.length>160 || product.length>160 || quantity?.length>80 || details?.length>3000) return res.status(400).json({error:"One or more fields are too long"});
-  const record = {id:crypto.randomUUID(),manufacturerId,name:name.trim(),email:email.trim(),company:String(company||"").trim(),product:product.trim(),quantity:String(quantity||"").trim(),details:String(details||"").trim(),createdAt:new Date().toISOString()};
+  if (!manufacturers.some(m=>m.id===manufacturerId)) return res.status(400).json({error:"Unknown manufacturer"});
+  if (name.length>120 || email.length>254 || company?.length>160 || product.length>160 || quantity?.length>80 || details?.length>3000 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:"Invalid email or field length"});
+  const record = {id:randomUUID(),manufacturerId,name:name.trim(),email:email.trim(),company:String(company||"").trim(),product:product.trim(),quantity:String(quantity||"").trim(),details:String(details||"").trim(),createdAt:new Date().toISOString()};
   const file = path.join(dataDir,"enquiries.json");
-  const current = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,"utf8")) : [];
+  let current: unknown[] = [];
+  if (fs.existsSync(file)) { try { current = JSON.parse(fs.readFileSync(file,"utf8")); if (!Array.isArray(current)) current=[]; } catch { return res.status(500).json({error:"Enquiry storage is unavailable"}); } }
   current.push(record);
   fs.writeFileSync(file,JSON.stringify(current,null,2),{mode:0o600});
   res.status(201).json({ok:true,id:record.id});
 });
 
-if (process.env.NODE_ENV === "production") {
-  const dist = path.join(root,"dist");
-  app.use(express.static(dist));
-  app.get("*",(_req,res)=>res.sendFile(path.join(dist,"index.html")));
-} else {
-  app.get("*",(_req,res)=>res.status(200).send("FactoryScout API is running. Start Vite separately with npm run dev:client."));
+async function start() {
+  if (process.env.NODE_ENV === "production") {
+    const dist = path.join(root,"dist");
+    app.use(express.static(dist));
+    app.get("*",(_req,res)=>res.sendFile(path.join(dist,"index.html")));
+  } else {
+    const vite = await createViteServer({server:{middlewareMode:true},appType:"spa"});
+    app.use(vite.middlewares);
+  }
+  app.listen(port,"0.0.0.0",()=>console.log(`FactoryScout listening on ${port}`));
 }
-app.listen(port,"0.0.0.0",()=>console.log(`FactoryScout listening on ${port}`));
+start().catch(error=>{console.error(error);process.exit(1);});
