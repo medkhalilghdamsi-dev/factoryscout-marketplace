@@ -21,9 +21,9 @@ const seed: Manufacturer[] = [
   {id:"atll",name:"ATLL",region:"Casablanca, Morocco",category:["Streetwear","Hoodies","Apparel"],summary:"Moroccan apparel manufacturer included as a regional comparison option, not a Tunisian factory listing.",capabilities:["Hoodies","Embroidery","Garment production"],moq:"200 pieces per model (published)",leadTime:"Not publicly confirmed",evidence:"Supplier-published",evidenceNote:"Public website claims require direct confirmation; no independent audit has been completed by FactoryScout.",exportMarkets:["Not confirmed"],status:"Regional comparison"}
 ];
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-// This key is server-only. Never expose it through Vite or return it from an API route.
-const databaseReady = Boolean(supabaseUrl && serviceRoleKey);
+const publicApiKey = process.env.SUPABASE_ANON_KEY;
+// The anon key is intentionally constrained by Supabase RLS policies.
+const databaseReady = Boolean(supabaseUrl && publicApiKey);
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimit(req: Request, res: Response, next: NextFunction) {
@@ -39,7 +39,7 @@ async function supabase(table: string, options: { method?: string; query?: strin
   if (!databaseReady) throw new Error("Database is not configured");
   const response = await fetch(`${supabaseUrl}/rest/v1/${table}${options.query ? `?${options.query}` : ""}`, {
     method: options.method || "GET",
-    headers: { apikey: serviceRoleKey!, Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
+    headers: { apikey: publicApiKey!, Authorization: `Bearer ${publicApiKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
     ...(options.body ? { body: JSON.stringify(options.body) } : {})
   });
   if (!response.ok) {
