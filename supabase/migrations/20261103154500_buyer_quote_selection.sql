@@ -83,3 +83,24 @@ end;
 $$;
 revoke all on function public.select_rfq_quote(uuid,text) from public,anon;
 grant execute on function public.select_rfq_quote(uuid,text) to authenticated;
+
+-- A supplier cannot alter a quotation after the buyer has selected it.
+drop policy if exists "Assigned suppliers can update own quotes" on public.supplier_quotes;
+create policy "Assigned suppliers can update own quotes"
+ on public.supplier_quotes for update to authenticated
+ using (
+   supplier_owner_id=(select auth.uid())
+   and not exists(select 1 from public.rfq_quote_decisions d
+     where d.rfq_id=supplier_quotes.rfq_id
+       and d.manufacturer_id=supplier_quotes.manufacturer_id
+       and d.status='selected')
+ )
+ with check (
+   supplier_owner_id=(select auth.uid())
+   and manufacturer_id in(select manufacturer_id from public.supplier_accounts where owner_id=(select auth.uid()) and status='approved')
+   and (rfq_id,manufacturer_id) in(select rfq_id,manufacturer_id from public.rfq_targets)
+   and not exists(select 1 from public.rfq_quote_decisions d
+     where d.rfq_id=supplier_quotes.rfq_id
+       and d.manufacturer_id=supplier_quotes.manufacturer_id
+       and d.status='selected')
+ );
