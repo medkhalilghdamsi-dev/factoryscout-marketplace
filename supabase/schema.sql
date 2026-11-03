@@ -736,3 +736,11 @@ values
  array['https://www.demcointer.com/en/faq/','https://www.demcointer.com/en/contact/'],
  'Confirm contracting legal entity, factory operations, denim/knitwear capacity, wash/finishing, fabric sourcing, MOQ, sample charges and current social/environmental certifications. Public-source prospect only; no outreach or approval yet.','researched')
 on conflict(website) do nothing;
+
+
+-- Admin review log supports public enquiry and RFQ audit event types.
+alter table public.admin_review_events
+  drop constraint if exists admin_review_events_entity_type_check;
+alter table public.admin_review_events
+  add constraint admin_review_events_entity_type_check
+  check (entity_type = any (array['supplier_account'::text,'product'::text,'manufacturer'::text,'buyer_enquiry'::text,'rfq'::text]));
