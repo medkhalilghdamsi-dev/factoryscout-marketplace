@@ -112,3 +112,29 @@ footer{padding:32px 7.2%}.profile-modal{border-radius:4px}.form-grid input,.form
 .storefront-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
 .storefront-actions .button{flex:1;min-width:180px}
 @media(max-width:640px){.storefront-cover{margin:-24px -20px 24px;height:125px}.storefront-actions{display:grid}.storefront-modal{max-height:90vh}}
+
+
+/* Secure buyer and supplier account workspace */
+.account-trigger{border:1px solid #d9d7d1;background:#fff;color:#20231f;border-radius:3px;padding:11px 15px;font:600 11px/1.2 inherit;letter-spacing:.04em;cursor:pointer;white-space:nowrap}
+.account-trigger:hover{background:#f2f1ed}
+.account-backdrop{position:fixed;inset:0;background:rgba(16,20,17,.58);z-index:1000;display:flex;justify-content:flex-end}
+.account-panel{position:relative;background:#fbfaf7;color:#20231f;width:min(100%,520px);height:100%;overflow:auto;padding:42px 34px 36px;box-shadow:-18px 0 60px rgba(0,0,0,.18)}
+.account-close{position:absolute;right:22px;top:18px;border:0;background:none;font-size:30px;cursor:pointer;color:#20231f}
+.account-panel h2{font-size:42px;line-height:1.02;letter-spacing:-.04em;margin:22px 0 12px;font-weight:600}
+.account-panel h2 em{font-family:Georgia,serif;font-weight:400}
+.account-copy{color:#6b7069;font-size:13px;line-height:1.65;margin:0 0 22px}
+.account-form{display:grid;gap:13px;margin:20px 0}
+.account-form label{display:grid;gap:6px;color:#414640;font-size:11px;font-weight:600;letter-spacing:.03em}
+.account-form input,.account-form select,.account-form textarea{width:100%;box-sizing:border-box;border:1px solid #deded7;background:white;border-radius:2px;padding:12px 11px;color:#20231f;font:400 13px/1.4 inherit;min-height:42px}
+.account-form textarea{resize:vertical}
+.account-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.account-form .account-checkbox{display:flex;align-items:center;gap:9px}
+.account-form .account-checkbox input{width:16px;min-height:16px}
+.account-switch{border:0;background:none;color:#525d4e;text-decoration:underline;text-underline-offset:3px;font-size:12px;cursor:pointer;padding:7px 0}
+.account-message{padding:12px;background:#eeefe9;border-left:3px solid #6b765d;color:#384334;font-size:12px;line-height:1.5}
+.account-status,.supplier-review-card{display:flex;flex-direction:column;gap:7px;padding:15px;border:1px solid #e3e1d9;background:#fff;margin:15px 0 20px;font-size:12px}
+.account-status span,.supplier-review-card span{color:#74786f}
+.supplier-review-card strong{font-size:11px;color:#9a7130;text-transform:uppercase;letter-spacing:.06em}
+.supplier-review-card strong.approved{color:#426b48}
+.account-panel h3{font-size:16px;margin:22px 0 5px}
+@media(max-width:600px){.account-panel{padding:38px 22px 28px}.account-panel h2{font-size:36px}.account-form-grid{grid-template-columns:1fr}.top-actions{gap:7px}.account-trigger{padding:10px 9px;font-size:10px}}
