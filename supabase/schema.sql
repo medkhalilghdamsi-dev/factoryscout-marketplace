@@ -38,3 +38,74 @@ insert into public.manufacturers (id,name,region,category,summary,capabilities,m
 ('goldtex','Goldtex','Bizerte',array['Fashion apparel','Sportswear','Technical apparel'],'Tunisian apparel manufacturer publicly describing fashion, sportswear and technical garment production.',array['Fashion apparel','Sportswear','Technical apparel'],'Not publicly confirmed','Not publicly confirmed','Supplier-published','Production scale and certification claims require documentary review. No independent factory audit has been completed by FactoryScout.',array['Not confirmed'],'Review required',true,'unverified'),
 ('atll','ATLL','Casablanca, Morocco',array['Streetwear','Hoodies','Apparel'],'Moroccan apparel manufacturer included as a regional comparison option, not a Tunisian factory listing.',array['Hoodies','Embroidery','Garment production'],'200 pieces per model (published)','Not publicly confirmed','Supplier-published','Public website claims require direct confirmation; no independent audit has been completed by FactoryScout.',array['Not confirmed'],'Regional comparison',true,'unverified')
 on conflict (id) do nothing;
+
+-- Product catalogue and multi-supplier RFQ marketplace layer.
+create table if not exists public.products (
+ id uuid primary key default gen_random_uuid(),
+ manufacturer_id text not null references public.manufacturers(id) on delete cascade,
+ name text not null check (char_length(name) between 2 and 180),
+ product_type text not null check (char_length(product_type) between 2 and 120),
+ description text not null default '' check (char_length(description) <= 3000),
+ materials text[] not null default '{}',
+ techniques text[] not null default '{}',
+ minimum_order integer check (minimum_order is null or minimum_order > 0),
+ sample_available boolean not null default false,
+ lead_time_days integer check (lead_time_days is null or lead_time_days between 1 and 730),
+ image_url text,
+ evidence text not null default 'Supplier-published',
+ status text not null default 'pending' check (status in ('pending','published','rejected')),
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now()
+);
+create index if not exists products_published_type_idx on public.products(status, product_type);
+create index if not exists products_manufacturer_idx on public.products(manufacturer_id);
+
+create table if not exists public.rfqs (
+ id uuid primary key,
+ buyer_name text not null check (char_length(buyer_name) between 2 and 120),
+ buyer_email text not null check (char_length(buyer_email) between 5 and 254),
+ company text not null default '' check (char_length(company) <= 160),
+ product_type text not null check (char_length(product_type) between 2 and 160),
+ quantity integer not null check (quantity between 1 and 10000000),
+ target_price text not null default '' check (char_length(target_price) <= 120),
+ delivery_country text not null check (char_length(delivery_country) between 2 and 100),
+ material_specs text not null default '' check (char_length(material_specs) <= 3000),
+ sample_required boolean not null default false,
+ target_date date,
+ status text not null default 'new' check (status in ('new','reviewing','matched','closed','spam')),
+ created_at timestamptz not null default now()
+);
+create index if not exists rfqs_created_at_idx on public.rfqs(created_at desc);
+
+create table if not exists public.rfq_targets (
+ rfq_id uuid not null references public.rfqs(id) on delete cascade,
+ manufacturer_id text not null references public.manufacturers(id),
+ created_at timestamptz not null default now(),
+ primary key (rfq_id, manufacturer_id)
+);
+create index if not exists rfq_targets_manufacturer_idx on public.rfq_targets(manufacturer_id);
+
+alter table public.products enable row level security;
+alter table public.rfqs enable row level security;
+alter table public.rfq_targets enable row level security;
+revoke all on public.products, public.rfqs, public.rfq_targets from anon, authenticated;
+grant select on public.products to anon;
+grant insert on public.rfqs, public.rfq_targets to anon;
+
+drop policy if exists "Public can view published product listings" on public.products;
+create policy "Public can view published product listings"
+ on public.products for select to anon using (
+  status = 'published' and exists (
+   select 1 from public.manufacturers m
+   where m.id = products.manufacturer_id and m.is_published = true
+  )
+);
+drop policy if exists "Public can submit new RFQs" on public.rfqs;
+create policy "Public can submit new RFQs"
+ on public.rfqs for insert to anon with check (status = 'new');
+drop policy if exists "Public can target published manufacturers" on public.rfq_targets;
+create policy "Public can target published manufacturers"
+ on public.rfq_targets for insert to anon
+ with check (
+  exists (select 1 from public.manufacturers m where m.id = rfq_targets.manufacturer_id and m.is_published = true)
+ );
