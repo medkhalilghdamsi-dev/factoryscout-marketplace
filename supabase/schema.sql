@@ -109,3 +109,50 @@ create policy "Public can target published manufacturers"
  with check (
   exists (select 1 from public.manufacturers m where m.id = rfq_targets.manufacturer_id and m.is_published = true)
  );
+
+
+-- Keep an RFQ and all supplier targets in one database transaction.
+create or replace function public.submit_rfq(
+ p_buyer_name text, p_buyer_email text, p_company text, p_product_type text,
+ p_quantity integer, p_target_price text, p_delivery_country text,
+ p_material_specs text, p_sample_required boolean, p_target_date date,
+ p_manufacturer_ids text[]
+) returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare v_rfq_id uuid; v_target_count integer;
+begin
+ if p_buyer_name is null or char_length(btrim(p_buyer_name)) not between 2 and 120
+   or p_buyer_email is null or char_length(btrim(p_buyer_email)) not between 5 and 254
+   or btrim(p_buyer_email) !~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$'
+   or p_product_type is null or char_length(btrim(p_product_type)) not between 2 and 160
+   or p_quantity is null or p_quantity not between 1 and 10000000
+   or p_delivery_country is null or char_length(btrim(p_delivery_country)) not between 2 and 100
+   or char_length(coalesce(p_company,'')) > 160
+   or char_length(coalesce(p_target_price,'')) > 120
+   or char_length(coalesce(p_material_specs,'')) > 3000
+   or p_sample_required is null
+   or coalesce(cardinality(p_manufacturer_ids),0) not between 1 and 5
+   or (select count(distinct x) from unnest(p_manufacturer_ids) as x) <> cardinality(p_manufacturer_ids)
+ then raise exception 'Invalid RFQ fields'; end if;
+ select count(*) into v_target_count from public.manufacturers m
+ where m.id = any(p_manufacturer_ids) and m.is_published = true;
+ if v_target_count <> cardinality(p_manufacturer_ids) then
+   raise exception 'One or more selected suppliers are not published';
+ end if;
+ insert into public.rfqs (
+   id,buyer_name,buyer_email,company,product_type,quantity,target_price,
+   delivery_country,material_specs,sample_required,target_date,status
+ ) values (
+   gen_random_uuid(),btrim(p_buyer_name),btrim(p_buyer_email),btrim(coalesce(p_company,'')),
+   btrim(p_product_type),p_quantity,btrim(coalesce(p_target_price,'')),
+   btrim(p_delivery_country),btrim(coalesce(p_material_specs,'')),
+   p_sample_required,p_target_date,'new'
+ ) returning id into v_rfq_id;
+ insert into public.rfq_targets(rfq_id,manufacturer_id)
+ select v_rfq_id, x from unnest(p_manufacturer_ids) as x;
+end;
+$$;
+revoke all on function public.submit_rfq(text,text,text,text,integer,text,text,text,boolean,date,text[]) from public, anon, authenticated;
+grant execute on function public.submit_rfq(text,text,text,text,integer,text,text,text,boolean,date,text[]) to anon;
+revoke insert on public.rfqs, public.rfq_targets from anon, authenticated;
