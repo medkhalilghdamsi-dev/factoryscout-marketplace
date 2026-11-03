@@ -1,51 +1,119 @@
 # FactoryScout Marketplace
 
-A buyer-side apparel sourcing directory for international brands exploring manufacturers in Tunisia and nearby markets.
+FactoryScout is a pre-launch B2B apparel-manufacturing sourcing marketplace. It is being built for international brands that want to discover manufacturers, compare capabilities, send structured RFQs to multiple suppliers, receive quotations and communicate in one workspace.
 
-## MVP
-- Responsive manufacturer directory with search and filters.
-- Supplier profiles distinguish published claims from independent verification.
-- Express API for public directory reads, buyer enquiries and supplier listing applications.
-- Supabase/Postgres schema for manufacturers, enquiries and supplier applications.
-- Server-side service-role access only; no public table policies.
-- GitHub Pages is a static preview only. It does not run the Express API.
+**Launch policy:** Do not acquire buyers or publicly launch until the acceptance gates in [docs/LAUNCH_READINESS.md](docs/LAUNCH_READINESS.md) are passed. Current supplier records are research leads and are not independently verified.
 
-## Run locally
+## Product capabilities
+
+### Public marketplace
+- Responsive manufacturer directory with keyword, category and location filters.
+- Dedicated supplier storefront routes.
+- Product catalogue and product discovery filters.
+- Supplier comparison and saved-supplier shortlist.
+- Public supplier enquiry and multi-supplier RFQ entry points.
+- Evidence labels and explicit limitations on supplier-published information.
+
+### Buyer workspace
+- Supabase Auth signup, email confirmation, sign-in and sign-out.
+- Buyer profile created by the database auth trigger.
+- Saved manufacturers.
+- Authenticated RFQ submission and RFQ/quotation tracking.
+- Private RFQ conversations and messaging with assigned suppliers.
+
+### Supplier workspace
+- Supplier account application and pending-review state.
+- Admin approval creates a linked manufacturer listing.
+- Approved suppliers can submit product listings and upload product images for moderation.
+- Assigned RFQs and quotation submission.
+- Private RFQ conversations and messaging with buyers.
+
+### Admin foundation
+- Supplier application review and approval/rejection.
+- Product moderation.
+- Database-backed admin role check.
+- More complete audit history, trust review and operational controls remain launch requirements.
+
+## Architecture
+
+- Frontend: React 19, TypeScript, Vite.
+- API: Express.
+- Database and authentication: Supabase Postgres, Auth, Row Level Security and Storage.
+- Hosting: Render Node web service, Frankfurt region.
+- Source control and CI: GitHub; CI typechecks/builds and runs Playwright responsive browser tests.
+
+The frontend uses the Supabase publishable key only. The Express API currently uses `SUPABASE_URL` and `SUPABASE_ANON_KEY`; database access is constrained by the project's grants and RLS. Never expose a Supabase service-role key in browser code or Vite environment variables.
+
+## Local development
+
 Requirements: Node.js 22+ and npm.
+
 ```bash
 npm install
 cp .env.example .env
 npm run dev
 ```
-Without Supabase credentials, the directory uses demo profiles. Enquiry and supplier application endpoints return a clear 503 response and do not pretend to store submissions.
 
-## Connect Supabase
-1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the project's SQL Editor.
-3. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the backend host.
-4. Keep the service-role key private. Never add it to Vite variables, frontend code, GitHub Pages, or a committed `.env` file.
-5. Deploy this Express application to a Node.js host and point the production domain to that host. GitHub Pages cannot host the API.
+Required local environment variables for the API:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
 
-The schema enables Row Level Security and deliberately defines no anon/authenticated table policies. The Express server uses the service-role key for limited API operations. Build an authenticated admin workflow before adding management endpoints.
+Required Vite variables for authenticated browser features:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-## API
-- `GET /api/health` — service status and database configuration.
-- `GET /api/manufacturers` — published profiles only.
-- `POST /api/enquiries` — validate and store a buyer enquiry.
-- `POST /api/supplier-applications` — submit a manufacturer listing request for review.
+Without Supabase configuration, the public directory falls back to clearly labelled demonstration/research profiles. Authenticated workflows require a configured Supabase project.
 
-Submission endpoints apply a basic per-IP in-memory rate limit. Before public traffic, move rate limiting to a shared store, add bot protection, email notifications and abuse monitoring.
+## Database
 
-## Privacy and trust
-- Buyer enquiries and supplier applications are private database records.
-- Never expose the Supabase service-role key.
-- No profile should be described as audited, certified or independently verified unless evidence has been reviewed and the scope/date recorded.
-- Initial profiles are research leads, not endorsements. One regional comparison supplier is outside Tunisia and explicitly labelled.
-- Add a privacy notice, retention period, deletion process and responsible contact before accepting real personal data.
+The live Supabase project already contains the marketplace schema and subsequent migrations. For a fresh project, review and apply the SQL files under `supabase/` in their documented order; do not assume the initial schema file alone represents the current live database.
 
-## Build
+Core data includes:
+- Manufacturers and products.
+- Buyer profiles and supplier accounts/applications.
+- RFQs and RFQ supplier targets.
+- Supplier quotations.
+- Saved manufacturers.
+- RFQ conversations and messages.
+- Enquiries and moderation records.
+
+RLS is enabled on the marketplace tables. Before launch, test every read/write path as anonymous, buyer, supplier A, supplier B and admin identities. Do not treat the presence of a policy as proof that a complete workflow is secure.
+
+## Browser tests
+
+The GitHub Actions workflow installs Playwright and Chromium, then runs the responsive viewport suite:
+
 ```bash
-npm run typecheck
-npm run build
-NODE_ENV=production npm start
+npm install
+npm install --no-save @playwright/test
+npx playwright install chromium
+npx playwright test
 ```
+
+The suite currently covers homepage overflow and visibility at mobile, tablet and desktop widths, mobile navigation, and direct supplier storefront access. Buyer/supplier/admin end-to-end tests are still required.
+
+## Deployment
+
+Render deploys the Express/Vite application using `render.yaml`. The health endpoint is:
+
+```
+GET /api/health
+```
+
+Production launch requires a custom domain, transactional email, monitoring/alerting, backup and restore validation, shared rate limiting, bot/abuse protection, documented rollback and privacy/legal pages.
+
+## Trust and supplier verification
+
+A published profile is not automatically a verified factory. Before any supplier is labelled verified, retain evidence for:
+- Legal business identity and official website/contact details.
+- Actual production facility and relevant manufacturing capabilities.
+- MOQ, production capacity, lead time and sample process.
+- Export experience and destination markets.
+- Certification scope, issuer, validity and verification date.
+- Permission to publish supplier identity, brand assets, photographs and claims.
+
+Never invent products, factory photographs, certifications, reviews, capacity, prices or export claims. Clearly label supplier-published claims and missing information.
+
+## Pre-launch checklist
+
+The full acceptance plan, technical audit findings and launch gates are maintained in [docs/LAUNCH_READINESS.md](docs/LAUNCH_READINESS.md).
