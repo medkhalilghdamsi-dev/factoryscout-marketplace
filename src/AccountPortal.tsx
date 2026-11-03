@@ -31,20 +31,24 @@ export default function AccountPortal() {
   const [uploadingImage,setUploadingImage] = useState(false);
   const [adminSuppliers,setAdminSuppliers] = useState<any[]>([]);
   const [adminProducts,setAdminProducts] = useState<any[]>([]);
+  const [savedManufacturers,setSavedManufacturers] = useState<any[]>([]);
 
   const loadAccount = async (current:User|null) => {
     setUser(current);
     setProfile(null);
     setSupplier(null);
+    setSavedManufacturers([]);
     if (!current || !supabase) return;
-    const [p,s] = await Promise.all([
+    const [p,s,saved] = await Promise.all([
       supabase.from("profiles").select("id,email,full_name,account_type,role").eq("id",current.id).maybeSingle(),
-      supabase.from("supplier_accounts").select("*").eq("owner_id",current.id).maybeSingle()
+      supabase.from("supplier_accounts").select("*").eq("owner_id",current.id).maybeSingle(),
+      supabase.from("saved_manufacturers").select("manufacturer_id,manufacturers(name,region)").eq("user_id",current.id).order("created_at",{ascending:false})
     ]);
     if (p.error) setMessage("Your account profile could not be loaded. Please refresh.");
     else setProfile(p.data as Profile|null);
     if (s.error && s.error.code !== "PGRST116") setMessage("Supplier workspace could not be loaded.");
     else setSupplier(s.data as SupplierAccount|null);
+    if (!saved.error) setSavedManufacturers(saved.data || []);
   };
 
   useEffect(() => {
@@ -165,6 +169,13 @@ export default function AccountPortal() {
     event.target.value="";
   };
 
+  const removeSavedManufacturer = async (manufacturerId:string) => {
+    if (!supabase || !user) return;
+    const {error} = await supabase.from("saved_manufacturers").delete().eq("user_id",user.id).eq("manufacturer_id",manufacturerId);
+    if (error) setMessage("Could not remove saved supplier: " + error.message);
+    else setSavedManufacturers(rows=>rows.filter(row=>row.manufacturer_id!==manufacturerId));
+  };
+
   const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setMessage("You have signed out."); };
 
   return <>
@@ -220,7 +231,11 @@ export default function AccountPortal() {
               </form>
             </> : <p className="account-copy">Once your company is approved and connected to its manufacturer record, you can upload products for moderation here.</p>}
           </>}
-          {profile?.role!=="admin" && profile?.account_type==="buyer" && <p className="account-copy">Your buyer workspace is ready. Persistent saved suppliers and buyer RFQ history are coming next.</p>}
+          {profile?.role!=="admin" && profile?.account_type==="buyer" && <div className="buyer-workspace">
+            <h3>Saved manufacturers ({savedManufacturers.length})</h3>
+            {savedManufacturers.length===0 ? <p className="account-copy">Your saved suppliers will appear here. Browse the directory and tap the heart on a factory profile to keep it in your shortlist.</p> : savedManufacturers.map(row=><div className="saved-manufacturer-row" key={row.manufacturer_id}><div><b>{row.manufacturers?.name || row.manufacturer_id}</b><span>{row.manufacturers?.region || "FactoryScout supplier"}</span></div><button disabled={busy} onClick={()=>removeSavedManufacturer(row.manufacturer_id)}>Remove</button></div>)}
+            <p className="account-copy">RFQ history and supplier replies are the next buyer-workspace features.</p>
+          </div>}
           <button className="account-switch" onClick={signOut}>Sign out</button>
         </>}
         {message && <p className="account-message" role="status">{message}</p>}
