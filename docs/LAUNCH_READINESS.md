@@ -18,7 +18,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 
 ## Audit findings to resolve before launch
 
-1. **Legacy public enquiry/application endpoints need a permission and credential review.** The Express API uses the Supabase anon key for REST writes to `enquiries` and `supplier_applications`; the checked-in schema does not show corresponding anon insert grants/policies. Test these paths against the live project and either implement narrowly scoped secure writes or remove the obsolete endpoints/UI.
+1. **Public submission abuse controls need hardening.** Live RLS policies allow narrowly scoped anonymous inserts for enquiries and supplier applications. The public `submit_rfq` RPC is also executable by `anon`, so a caller can invoke it directly through PostgREST and bypass the Express API's in-memory per-IP rate limiter and honeypot. Before launch, move public submissions behind a server-only credential with shared rate limiting and bot protection, or require verified buyer accounts; then revoke direct anonymous RPC execution and test all public write grants. Do not put a service-role key in browser code.
 2. **Configuration documentation is inconsistent.** `.env.example` documents `SUPABASE_SERVICE_ROLE_KEY`, while `server.ts` currently reads `SUPABASE_ANON_KEY`; `render.yaml` defines `SUPABASE_ANON_KEY` and browser publishable-key variables. Establish one explicit least-privilege configuration contract; never expose a service-role secret to the browser.
 3. **README is behind the current product.** It describes the earlier directory/enquiry MVP and does not document the buyer/supplier portal, products, RFQs, quotations, messaging, moderation, or current deployment setup.
 4. **Messaging is not launch-proven.** Live tables exist for RFQ conversations/messages, but their complete schema, RLS, realtime behavior, unread state and UI flows must be tested.
@@ -66,7 +66,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Validate quote currency, positive price, MOQ, lead time, validity date, status transitions and input limits.
 - [x] Buyer/supplier conversation panel, message persistence UI, manual refresh and read-receipt update UI implemented (not yet E2E verified).\n- [ ] Conversation creation/participant authorization, message persistence, unread/read state and realtime or reliable refresh verified with separate test identities.
 - [ ] Email notifications for signup, supplier approval, new RFQ, new quote and new message (with retries and opt-out).
-- [ ] Abuse controls: server-side rate limits in shared storage, honeypot/bot protection, request validation and audit trail.
+- [ ] Abuse controls: server-side rate limits in shared storage, honeypot/bot protection, request validation and audit trail. The current in-memory Express limiter is bypassable for direct anonymous RPC calls.
 
 **Pass condition:** A complete buyer-to-multiple-supplier-to-quote-to-message workflow passes with at least two supplier test accounts.
 
