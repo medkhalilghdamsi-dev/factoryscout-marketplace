@@ -368,3 +368,80 @@ footer { background: #122b20; color: #d1ddd3; }
 :root[data-theme="dark"] .hero-index,
 :root[data-theme="dark"] .hero-bottom-note,
 :root[data-theme="dark"] .visual-caption>span { color: #c5d8c8; }
+
+/* Workspace surfaces: keep legacy dashboard markup on the same semantic tokens. */
+.account-panel {
+  background: var(--fs-surface);
+  color: var(--fs-text);
+  border-left-color: var(--fs-border);
+}
+.account-panel h2, .account-panel h3, .account-panel h4,
+.admin-dashboard h3, .buyer-workspace h3 { color: var(--fs-text); }
+.account-panel .account-copy, .admin-dashboard .account-copy,
+.admin-dashboard small, .admin-dashboard time { color: var(--fs-text-muted); }
+.account-panel .account-form input,
+.account-panel .account-form select,
+.account-panel .account-form textarea,
+.account-panel .admin-review-item input,
+.account-panel .admin-review-item select,
+.account-panel .admin-review-item textarea {
+  border-color: var(--fs-border);
+  background: var(--fs-surface);
+  color: var(--fs-text);
+}
+.account-panel .account-form input::placeholder,
+.account-panel .admin-review-item input::placeholder { color: var(--fs-text-muted); }
+.account-panel .admin-review-item,
+.account-panel .admin-audit-item,
+.account-panel .supplier-review-card,
+.account-panel .account-status,
+.account-panel .saved-manufacturer-row,
+.account-panel .admin-rfq-quotes {
+  border-color: var(--fs-border);
+  background: var(--fs-surface-raised);
+  color: var(--fs-text-secondary);
+}
+.account-panel .admin-review-item b,
+.account-panel .supplier-review-card>b,
+.account-panel .account-status>b,
+.account-panel .saved-manufacturer-row b,
+.account-panel .admin-audit-item b { color: var(--fs-text); }
+.account-panel .admin-review-item span,
+.account-panel .admin-review-item p,
+.account-panel .supplier-review-card span,
+.account-panel .account-status span,
+.account-panel .saved-manufacturer-row span,
+.account-panel .admin-audit-item span { color: var(--fs-text-secondary); }
+.account-panel .buyer-workspace,
+.account-panel .buyer-workspace h3,
+.account-panel .admin-dashboard h3 { border-color: var(--fs-border); }
+.account-panel .saved-manufacturer-row button,
+.account-panel .admin-review-item button,
+.account-panel .quote-actions button,
+.account-panel .message-thread,
+.account-panel .message-history,
+.account-panel .conversation-choice,
+.account-panel .message-compose textarea {
+  border-color: var(--fs-border);
+  background: var(--fs-surface);
+  color: var(--fs-text-secondary);
+}
+.account-panel .saved-manufacturer-row button:hover,
+.account-panel .admin-review-item button:hover,
+.account-panel .quote-actions button:hover { border-color: var(--fs-border-strong); }
+.account-panel .admin-review-item button:first-child,
+.account-panel .quote-actions button:first-child,
+.account-panel .message-compose button,
+.account-panel .quote-select-button {
+  border-color: var(--fs-accent-strong);
+  background: var(--fs-accent-strong);
+  color: var(--fs-accent-contrast);
+}
+.account-panel .account-panel-toolbar {
+  background: var(--fs-surface);
+}
+.account-panel .account-close {
+  border-color: var(--fs-border);
+  background: var(--fs-surface-muted);
+  color: var(--fs-text);
+}
