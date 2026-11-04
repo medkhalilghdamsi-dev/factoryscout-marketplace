@@ -90,7 +90,7 @@ export default function AccountPortal() {
       const lastItem = items[items.length - 1];
       if (event.shiftKey && (document.activeElement === firstItem || !panel?.contains(document.activeElement))) {
         event.preventDefault(); lastItem.focus();
-      } else if (!event.shiftKey && document.activeElement === lastItem) {
+      } else if (!event.shiftKey && (document.activeElement === lastItem || !panel?.contains(document.activeElement))) {
         event.preventDefault(); firstItem.focus();
       }
     };
