@@ -38,7 +38,7 @@ test("mobile navigation opens and category navigation remains usable", async ({ 
   await page.goto("/");
   await page.locator(".menu-btn").click();
   await expect(page.locator(".nav.open")).toBeVisible();
-  await page.locator(".nav.open a[href='#directory']").click();
+  await page.locator(".nav.open a[href='/suppliers']").click();
   await expect(page).toHaveURL(/#directory$/);
 });
 
@@ -327,7 +327,7 @@ test("tablet navigation stays reachable at 768px and 1024px", async ({ page }) =
   await page.setViewportSize({ width: 1024, height: 900 });
   await page.goto("/");
   await expect(page.locator(".topbar>.nav")).toBeVisible();
-  await expect(page.locator(".topbar>.nav a[href='#catalog']")).toBeVisible();
+  await expect(page.locator(".topbar>.nav a[href='/products']")).toBeVisible();
 });
 
 
