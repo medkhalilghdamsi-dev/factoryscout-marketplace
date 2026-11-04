@@ -267,6 +267,23 @@ export default function App() {
       {(page==="home"||page==="how-it-works")&&(
       <section className="how section" id="how"><div className="eyebrow">A BETTER WAY TO SOURCE <span className="line"/></div><div className="how-head"><h2>Less guesswork.<br/><em>Better decisions.</em></h2><p>A polished website is not proof of a capable factory. FactoryScout makes the available information easier to compare—and makes missing evidence just as visible.</p></div><div className="steps"><div><span>01</span><div className="step-icon">⌕</div><h3>Discover</h3><p>Search manufacturers by location, product type and production capabilities.</p></div><div><span>02</span><div className="step-icon">▤</div><h3>Compare</h3><p>Review MOQs, lead times and the evidence behind each supplier profile.</p></div><div><span>03</span><div className="step-icon">↗</div><h3>Connect</h3><p>Send a structured enquiry with your product, quantity and requirements.</p></div></div></section>
       )}
+      {page==="for-manufacturers"&&(
+      <section className="manufacturer-page section" aria-labelledby="manufacturer-page-title">
+        <div className="manufacturer-page-intro">
+          <div><div className="eyebrow dark">FACTORYSCOUT / MANUFACTURER NETWORK <span className="line"/></div><h1 id="manufacturer-page-title">Make your factory<br/><em>easier to discover.</em></h1></div>
+          <p>Build a clear, evidence-led profile that helps international apparel buyers understand what your factory makes, how you work and which order details still need confirmation.</p>
+        </div>
+        <div className="manufacturer-benefits">
+          <article><span>01 / VISIBILITY</span><h2>Show your real capabilities.</h2><p>Present garment categories, production methods, materials and export markets in one structured profile.</p></article>
+          <article><span>02 / CLARITY</span><h2>Set clear expectations.</h2><p>Share published MOQs, lead times and sample information. Buyers can see what is confirmed and what needs a conversation.</p></article>
+          <article><span>03 / CONNECTION</span><h2>Receive better briefs.</h2><p>Help buyers explain their product, quantity, specifications and delivery requirements before a discussion begins.</p></article>
+        </div>
+        <div className="manufacturer-process">
+          <div><div className="eyebrow dark">HOW ONBOARDING WORKS</div><h2>Three steps to a<br/><em>clearer profile.</em></h2><p>Every application is reviewed before a listing is published. Submission does not guarantee approval or verification.</p></div>
+          <ol><li><b>01</b><span><strong>Submit your details</strong><small>Company, location, website, capabilities and public evidence links.</small></span></li><li><b>02</b><span><strong>FactoryScout review</strong><small>We review the information and may request clarification or supporting details.</small></span></li><li><b>03</b><span><strong>Publish your profile</strong><small>Approved information becomes discoverable to buyers with its evidence status clearly labelled.</small></span></li></ol>
+        </div>
+      </section>
+      )}
       {(page==="home"||page==="for-manufacturers")&&(
       <section className="list-cta" id="list"><div><div className="eyebrow">FOR TUNISIAN MANUFACTURERS</div><h2>Put your capabilities<br/>on the <em>map.</em></h2><p>Give international buyers a clearer view of your products, production methods, order sizes and export readiness.</p></div><button className="button light" type="button" onClick={()=>setShowSupplierForm(true)}>Request a listing <span>↗</span></button><div className="cta-stamp">FS<br/>TN</div></section>
       )}
