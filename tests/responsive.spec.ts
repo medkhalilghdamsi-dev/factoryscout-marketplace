@@ -278,3 +278,22 @@ test("manufacturer enquiry clearly explains FactoryScout review and follow-up", 
   await page.getByRole("button", { name: /Send to FactoryScout/ }).click();
   await expect(page.getByRole("status")).toContainText(/sent to FactoryScout for review/i);
 });
+
+
+test("light and dark themes persist across marketplace and supplier storefront navigation", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const themeButton = page.locator(".theme-toggle").first();
+  await expect(themeButton).toBeVisible();
+  await themeButton.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  expect(await page.evaluate(() => localStorage.getItem("factoryscout-theme"))).toBe("dark");
+
+  await page.goto("/suppliers/les-ateliers-bs");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const storefrontToggle = page.locator(".storefront-nav .theme-toggle");
+  await expect(storefrontToggle).toBeVisible();
+  await storefrontToggle.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await page.evaluate(() => localStorage.getItem("factoryscout-theme"))).toBe("light");
+});
