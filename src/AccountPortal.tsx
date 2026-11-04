@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
 import MessagingPanel from "./MessagingPanel";
+import { ThemeToggle } from "./Theme";
 
 
 type Profile = { id:string; email:string|null; full_name:string; account_type:"buyer"|"supplier"; role:"user"|"admin" };
@@ -296,7 +297,7 @@ export default function AccountPortal() {
     <button className="account-trigger" onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>
     {open && <div className="account-backdrop" onClick={()=>setOpen(false)}>
       <section className="account-panel" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label="FactoryScout account">
-        <button className="account-close" onClick={()=>setOpen(false)} aria-label="Close">×</button>
+        <div className="account-panel-toolbar"><ThemeToggle /><button className="account-close" onClick={()=>setOpen(false)} aria-label="Close">×</button></div>
         <div className="eyebrow dark">FACTORYSCOUT ACCOUNT</div>
         {!supabase ? <><h2>Accounts are<br/><em>being configured.</em></h2><p className="account-copy">The secure account service is not configured in this deployment yet.</p></> :
         !session ? <>
