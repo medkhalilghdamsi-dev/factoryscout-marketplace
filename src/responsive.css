@@ -461,3 +461,6 @@ footer{display:flex;align-items:center;justify-content:space-between;gap:28px;fl
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
+/* Navigation refinement: primary links live in the header; this rail is category-only. */
+.marketplace-category-nav>span{color:#aab9ac;font-size:8px;font-weight:800;letter-spacing:1.25px;white-space:nowrap}
+@media(max-width:1100px){.marketplace-category-nav{top:98px}}
