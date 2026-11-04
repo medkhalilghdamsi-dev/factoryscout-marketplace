@@ -1249,3 +1249,40 @@ html[data-theme="dark"] .product-detail-empty p{color:#e7eee8}
   }
   .topbar>.nav.open a{padding:12px 8px;border-bottom:1px solid #ffffff20}
 }
+
+
+/* Multi-page marketplace layout */
+.page-shell-products .marketplace-category-nav,
+.page-shell-how-it-works .marketplace-category-nav,
+.page-shell-for-manufacturers .marketplace-category-nav,
+.page-shell-request-quote .marketplace-category-nav{display:none}
+.page-content.page-suppliers .hero,
+.page-content.page-suppliers .marketplace-assurance,
+.page-content.page-suppliers .catalog,
+.page-content.page-suppliers .how,
+.page-content.page-suppliers .list-cta{display:none!important}
+.page-content.page-products .hero,
+.page-content.page-products .marketplace-assurance,
+.page-content.page-products .directory,
+.page-content.page-products .how,
+.page-content.page-products .list-cta{display:none!important}
+.page-content.page-how-it-works .hero,
+.page-content.page-how-it-works .marketplace-assurance,
+.page-content.page-how-it-works .directory,
+.page-content.page-how-it-works .catalog,
+.page-content.page-how-it-works .list-cta{display:none!important}
+.page-content.page-for-manufacturers .hero,
+.page-content.page-for-manufacturers .marketplace-assurance,
+.page-content.page-for-manufacturers .directory,
+.page-content.page-for-manufacturers .catalog,
+.page-content.page-for-manufacturers .how{display:none!important}
+.page-content.page-request-quote>section{display:none!important}
+.page-shell-how-it-works .footer-main,
+.page-shell-for-manufacturers .footer-main{border-top:1px solid var(--line)}
+.topbar .nav a[aria-current="page"]{color:var(--accent);font-weight:700}
+@media(max-width:820px){
+  .page-shell-products .topbar .marketplace-global-search,
+  .page-shell-how-it-works .topbar .marketplace-global-search,
+  .page-shell-for-manufacturers .topbar .marketplace-global-search,
+  .page-shell-request-quote .topbar .marketplace-global-search{display:none}
+}
