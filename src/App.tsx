@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { supabase } from "./supabaseClient";
 
 const AccountPortal = lazy(() => import("./AccountPortal"));
 
@@ -44,17 +43,20 @@ export default function App() {
   const [supplierForm,setSupplierForm] = useState<SupplierApplication>({company:"",website:"",location:"",products:"",moq:"",leadTime:"",evidence:"",contactPage:"",contactName:"",honeypot:""});
   const [form,setForm] = useState<Enquiry>({manufacturerId:"",name:"",email:"",company:"",product:"",quantity:"",details:""});
   useEffect(()=>{
-    const client=supabase;
-    if(!client) return;
     let active=true;
-    const loadSaved=async(userId?:string)=>{
-      if(!userId){if(active)setSavedIds([]);return;}
-      const {data,error}=await client.from("saved_manufacturers").select("manufacturer_id").eq("user_id",userId).order("created_at",{ascending:false});
-      if(active&&!error)setSavedIds((data||[]).map(row=>row.manufacturer_id));
-    };
-    void client.auth.getSession().then(({data})=>loadSaved(data.session?.user.id));
-    const {data:{subscription}}=client.auth.onAuthStateChange((_event,session)=>{void loadSaved(session?.user.id);});
-    return ()=>{active=false;subscription.unsubscribe();};
+    let unsubscribe:(()=>void)|undefined;
+    void import("./supabaseClient").then(({supabase:client})=>{
+      if(!active||!client)return;
+      const loadSaved=async(userId?:string)=>{
+        if(!userId){if(active)setSavedIds([]);return;}
+        const {data,error}=await client.from("saved_manufacturers").select("manufacturer_id").eq("user_id",userId).order("created_at",{ascending:false});
+        if(active&&!error)setSavedIds((data||[]).map(row=>row.manufacturer_id));
+      };
+      void client.auth.getSession().then(({data})=>loadSaved(data.session?.user.id));
+      const {data:{subscription}}=client.auth.onAuthStateChange((_event,session)=>{void loadSaved(session?.user.id);});
+      unsubscribe=()=>subscription.unsubscribe();
+    }).catch(()=>{});
+    return ()=>{active=false;unsubscribe?.();};
   },[]);
   useEffect(()=>{fetch("/api/manufacturers").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d)&&d.length)setItems(d)}).catch(()=>{});fetch("/api/products").then(r=>r.ok?r.json():null).then(d=>{if(Array.isArray(d))setProducts(d)}).catch(()=>{}).finally(()=>setProductsLoaded(true));},[]);
   const filtered = useMemo(()=>items.filter(m=>{
@@ -98,7 +100,7 @@ export default function App() {
   const toggleSaved=async(id:string)=>{
     const removing=savedIds.includes(id);
     setSavedIds(ids=>removing?ids.filter(x=>x!==id):[...ids,id]);
-    const client=supabase;
+    const {supabase:client}=await import("./supabaseClient");
     if(!client){setNotice("Sign in to keep your saved suppliers across devices.");return;}
     const {data:{session}}=await client.auth.getSession();
     if(!session?.user){setNotice("Sign in to keep your saved suppliers across devices.");return;}
@@ -110,7 +112,7 @@ export default function App() {
   };
   const openEnquiry=(m:Manufacturer)=>{setSelected(m);setForm(f=>({...f,manufacturerId:m.id}));setShowForm(true);};
   const submit=async(e:React.FormEvent)=>{e.preventDefault();try{const r=await fetch("/api/enquiries",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"The enquiry service is unavailable.");setNotice("Your enquiry has been sent to FactoryScout for review. We will follow up if we can connect you with this manufacturer.");setShowForm(false);setForm({manufacturerId:"",name:"",email:"",company:"",product:"",quantity:"",details:""});}catch(error){setNotice(error instanceof Error?error.message:"We could not submit your enquiry. Please try again.");}};
-  const submitRFQ=async(e:React.FormEvent)=>{e.preventDefault();try{if(!supabase)throw new Error("Buyer accounts are temporarily unavailable. Please try again later.");if(rfq.manufacturerIds.some(id=>!items.some(m=>m.id===id&&m.rfqEnabled)))throw new Error("One or more selected suppliers are not yet accepting RFQs. Choose an approved supplier account.");const {data:{session}}=await supabase.auth.getSession();if(!session?.user){setShowRfqForm(false);setRfqNotice("Sign in or create a buyer account first. Your RFQ draft is saved here—reopen it after signing in.");return;}const {error}=await supabase.rpc("submit_rfq_for_buyer",{p_buyer_name:rfq.name,p_buyer_email:session.user.email||rfq.email,p_company:rfq.company,p_product_type:rfq.productType,p_quantity:Number(rfq.quantity),p_target_price:rfq.targetPrice,p_delivery_country:rfq.deliveryCountry,p_material_specs:rfq.materialSpecs,p_sample_required:rfq.sampleRequired,p_target_date:rfq.targetDate||null,p_manufacturer_ids:rfq.manufacturerIds});if(error)throw error;setRfqNotice("Your RFQ has been submitted. Track supplier responses and quotations in your buyer workspace.");setShowRfqForm(false);setRfq({name:"",email:"",company:"",productType:"",quantity:"",targetPrice:"",deliveryCountry:"",materialSpecs:"",sampleRequired:false,targetDate:"",manufacturerIds:[],honeypot:""});}catch(error){setRfqNotice(error instanceof Error?error.message:"RFQ submission failed. Please try again.");}};
+  const submitRFQ=async(e:React.FormEvent)=>{e.preventDefault();try{const {supabase:client}=await import("./supabaseClient");if(!client)throw new Error("Buyer accounts are temporarily unavailable. Please try again later.");if(rfq.manufacturerIds.some(id=>!items.some(m=>m.id===id&&m.rfqEnabled)))throw new Error("One or more selected suppliers are not yet accepting RFQs. Choose an approved supplier account.");const {data:{session}}=await client.auth.getSession();if(!session?.user){setShowRfqForm(false);setRfqNotice("Sign in or create a buyer account first. Your RFQ draft is saved here—reopen it after signing in.");return;}const {error}=await client.rpc("submit_rfq_for_buyer",{p_buyer_name:rfq.name,p_buyer_email:session.user.email||rfq.email,p_company:rfq.company,p_product_type:rfq.productType,p_quantity:Number(rfq.quantity),p_target_price:rfq.targetPrice,p_delivery_country:rfq.deliveryCountry,p_material_specs:rfq.materialSpecs,p_sample_required:rfq.sampleRequired,p_target_date:rfq.targetDate||null,p_manufacturer_ids:rfq.manufacturerIds});if(error)throw error;setRfqNotice("Your RFQ has been submitted. Track supplier responses and quotations in your buyer workspace.");setShowRfqForm(false);setRfq({name:"",email:"",company:"",productType:"",quantity:"",targetPrice:"",deliveryCountry:"",materialSpecs:"",sampleRequired:false,targetDate:"",manufacturerIds:[],honeypot:""});}catch(error){setRfqNotice(error instanceof Error?error.message:"RFQ submission failed. Please try again.");}};
   const submitSupplier=async(e:React.FormEvent)=>{e.preventDefault();try{const r=await fetch("/api/supplier-applications",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(supplierForm)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"The listing service is unavailable.");setNotice(data.message||"Your listing request has been submitted for review.");setShowSupplierForm(false);setSupplierForm({company:"",website:"",location:"",products:"",moq:"",leadTime:"",evidence:"",contactPage:"",contactName:"",honeypot:""});}catch(error){setNotice(error instanceof Error?error.message:"We could not submit your listing request. Please try again.");}};
   if(productId){
     const product=products.find(p=>p.id===decodeURIComponent(productId));
