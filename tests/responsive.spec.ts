@@ -313,3 +313,19 @@ test("dark theme styles the account workspace instead of leaving a light drawer"
   const panelColor = await panel.locator("h2, h3, h4").first().evaluate(el => getComputedStyle(el).color);
   expect(panelColor).toBe("rgb(231, 238, 232)");
 });
+
+
+test("tablet navigation stays reachable at 768px and 1024px", async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/");
+  const menu = page.locator(".menu-btn");
+  await expect(menu).toBeVisible();
+  await menu.click();
+  await expect(page.locator(".nav.open")).toBeVisible();
+  await expect(page.locator(".nav.open a[href='#directory']")).toBeVisible();
+
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto("/");
+  await expect(page.locator(".topbar>.nav")).toBeVisible();
+  await expect(page.locator(".topbar>.nav a[href='#catalog']")).toBeVisible();
+});
