@@ -98,10 +98,10 @@ export default function App() {
     document.title=match?match.name+" | FactoryScout":"Product details | FactoryScout";
   },[productId,products]);
   const navigatePage=(path:string)=>{window.history.pushState({}, "", path);const route=path.replace(/\/$/,"");setPage(route==="/suppliers"?"suppliers":route==="/products"?"products":route==="/how-it-works"?"how-it-works":route==="/for-manufacturers"?"for-manufacturers":route==="/request-quote"?"request-quote":"home");setStorefrontId(null);setProductId(null);setSelected(null);setMobileMenu(false);setShowRfqForm(route==="/request-quote");document.title=route==="/suppliers"?"Supplier directory | FactoryScout":route==="/products"?"Product catalogue | FactoryScout":route==="/how-it-works"?"How FactoryScout works | FactoryScout":route==="/for-manufacturers"?"For manufacturers | FactoryScout":"FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
-  const openStorefront=(m:Manufacturer)=>{window.history.pushState({}, "", "/suppliers/"+encodeURIComponent(m.id));setStorefrontId(m.id);setProductId(null);setSelected(m);window.scrollTo(0,0);};
-  const closeStorefront=()=>{window.history.pushState({}, "", "/");setStorefrontId(null);setProductId(null);setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
-  const openProduct=(p:Product)=>{window.history.pushState({}, "", "/products/"+encodeURIComponent(p.id));setStorefrontId(null);setSelected(null);setProductId(p.id);window.scrollTo(0,0);};
-  const closeProduct=()=>{window.history.pushState({}, "", "/");setProductId(null);setStorefrontId(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
+  const openStorefront=(m:Manufacturer)=>{window.history.pushState({}, "", "/suppliers/"+encodeURIComponent(m.id));setPage("suppliers");setStorefrontId(m.id);setProductId(null);setSelected(m);window.scrollTo(0,0);};
+  const closeStorefront=()=>{window.history.pushState({}, "", "/");setPage("home");setStorefrontId(null);setProductId(null);setSelected(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
+  const openProduct=(p:Product)=>{window.history.pushState({}, "", "/products/"+encodeURIComponent(p.id));setPage("products");setStorefrontId(null);setSelected(null);setProductId(p.id);window.scrollTo(0,0);};
+  const closeProduct=()=>{window.history.pushState({}, "", "/");setPage("home");setProductId(null);setStorefrontId(null);document.title="FactoryScout — Global apparel sourcing, made clearer";window.scrollTo(0,0);};
   const toggleCompare=(id:string)=>setCompareIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):ids.length<3?[...ids,id]:ids);
   const toggleSaved=async(id:string)=>{
     const removing=savedIds.includes(id);
