@@ -1065,3 +1065,104 @@ html[data-theme="dark"] .storefront-not-found p{color:#e7eee8}
  .storefront-nav .theme-toggle{margin-left:0}
  .storefront-nav .theme-toggle span{display:none}
 }
+
+
+/* Dark-mode parity for buyer, supplier and admin account workspaces */
+html[data-theme="dark"] .account-panel{
+ background:#17251c!important;color:#e7eee8!important;border-left:1px solid #2b3b30;
+}
+html[data-theme="dark"] .account-panel h2,
+html[data-theme="dark"] .account-panel h3,
+html[data-theme="dark"] .account-panel h4,
+html[data-theme="dark"] .account-panel strong,
+html[data-theme="dark"] .account-panel b{color:#e7eee8}
+html[data-theme="dark"] .account-copy,
+html[data-theme="dark"] .account-panel p,
+html[data-theme="dark"] .account-panel small,
+html[data-theme="dark"] .account-panel .eyebrow.dark{color:#a5b4a8}
+html[data-theme="dark"] .account-close{color:#d4e1d6}
+html[data-theme="dark"] .account-form label{color:#c5d3c8}
+html[data-theme="dark"] .account-form input,
+html[data-theme="dark"] .account-form select,
+html[data-theme="dark"] .account-form textarea{
+ background:#101a14!important;color:#e7eee8!important;border-color:#34483a!important;
+}
+html[data-theme="dark"] .account-form input::placeholder,
+html[data-theme="dark"] .account-form textarea::placeholder{color:#829487}
+html[data-theme="dark"] .account-switch{color:#a9cbb1}
+html[data-theme="dark"] .account-message{
+ background:#203329;color:#dce9df;border-left-color:#8fbd9b;
+}
+html[data-theme="dark"] .account-status,
+html[data-theme="dark"] .supplier-review-card,
+html[data-theme="dark"] .admin-review-item,
+html[data-theme="dark"] .admin-audit-item{
+ background:#1c2d22!important;color:#e7eee8;border-color:#34483a!important;
+}
+html[data-theme="dark"] .account-status span,
+html[data-theme="dark"] .supplier-review-card span,
+html[data-theme="dark"] .admin-review-item>span,
+html[data-theme="dark"] .admin-review-item>p,
+html[data-theme="dark"] .admin-audit-item span,
+html[data-theme="dark"] .admin-audit-item time,
+html[data-theme="dark"] .admin-audit-item small{color:#a5b4a8}
+html[data-theme="dark"] .admin-review-item button,
+html[data-theme="dark"] .messaging-heading>button,
+html[data-theme="dark"] .conversation-choice,
+html[data-theme="dark"] .message-compose button,
+html[data-theme="dark"] .quote-select-button{
+ background:#203329;color:#e7eee8;border-color:#47604d;
+}
+html[data-theme="dark"] .admin-review-item button:first-child{
+ background:#2f7650;color:#fff;border-color:#2f7650;
+}
+html[data-theme="dark"] .buyer-workspace,
+html[data-theme="dark"] .messaging-panel{border-color:#34483a}
+html[data-theme="dark"] .saved-manufacturer-row{border-color:#34483a}
+html[data-theme="dark"] .saved-manufacturer-row b,
+html[data-theme="dark"] .buyer-workspace h3,
+html[data-theme="dark"] .messaging-panel h3{color:#e7eee8}
+html[data-theme="dark"] .saved-manufacturer-row span{color:#a5b4a8}
+html[data-theme="dark"] .messaging-heading>button:hover,
+html[data-theme="dark"] .conversation-choice.active{background:#294b35;color:#e7eee8}
+html[data-theme="dark"] .conversation-choice span,
+html[data-theme="dark"] .conversation-choice small{color:#b1c2b5}
+html[data-theme="dark"] .message-thread{background:#17251c;border-color:#34483a}
+html[data-theme="dark"] .message-history{background:#101a14}
+html[data-theme="dark"] .message-bubble{background:#203329;color:#e7eee8;border-color:#34483a}
+html[data-theme="dark"] .message-bubble.mine{background:#294b35;border-color:#47694f}
+html[data-theme="dark"] .message-bubble time{color:#a5b4a8}
+html[data-theme="dark"] .message-compose{border-color:#34483a}
+html[data-theme="dark"] .message-compose textarea{
+ background:#101a14;color:#e7eee8;border-color:#47604d;
+}
+html[data-theme="dark"] .quote-comparison{
+ background:#17251c;border-color:#34483a;color:#e7eee8;
+}
+html[data-theme="dark"] .quote-comparison h4,
+html[data-theme="dark"] .quote-comparison .quote-price{color:#e7eee8}
+html[data-theme="dark"] .quote-comparison th{background:#203329;color:#c5d3c8}
+html[data-theme="dark"] .quote-comparison td{border-color:#34483a;color:#c5d3c8}
+html[data-theme="dark"] .quote-comparison .quote-status{background:#294b35;color:#dce9df}
+html[data-theme="dark"] .quote-decision{background:#203329;color:#c5d3c8}
+html[data-theme="dark"] .quote-decision.selected{background:#294b35;color:#bce0c2}
+html[data-theme="dark"] .quote-actions .quote-withdraw-button{
+ background:#203329;border-color:#47604d;color:#c5d3c8;
+}
+html[data-theme="dark"] .catalog-empty{
+ background:linear-gradient(115deg,#1a2b20,#17251c);border-color:#34483a;
+}
+html[data-theme="dark"] .catalog-empty h3{color:#e7eee8}
+html[data-theme="dark"] .catalog-empty p{color:#a5b4a8}
+html[data-theme="dark"] .catalog-empty-copy>span,
+html[data-theme="dark"] .catalog-secondary-link{color:#b4d0b9}
+html[data-theme="dark"] .supplier-claim-note{background:#332f20;color:#e0d3a8}
+html[data-theme="dark"] .supplier-prospect-item{border-color:#47604d}
+html[data-theme="dark"] .supplier-prospect-item>small{color:#a5b4a8}
+html[data-theme="dark"] .supplier-prospect-item>a,
+html[data-theme="dark"] .supplier-prospect-sources a{color:#a9cbb1}
+html[data-theme="dark"] .supplier-prospect-capabilities span{background:#203329;color:#c5d3c8}
+html[data-theme="dark"] .quote-waiting{color:#a5b4a8}
+html[data-theme="dark"] .product-detail-empty{background:#101a14;color:#e7eee8}
+html[data-theme="dark"] .product-detail-empty h1,
+html[data-theme="dark"] .product-detail-empty p{color:#e7eee8}
