@@ -9,9 +9,10 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 ## Current verified baseline (2026-11-03)
 
 - React 19 + Vite frontend, Express API, Supabase Postgres/Auth/Storage, Render web service.
-- Render service: `factoryscout-marketplace`, Frankfurt, free plan; the latest confirmed live deployment at the time of this audit is commit `52d5750` (2026-11-03 16:12 UTC). This includes the supplier prospect pipeline UI. New API middleware hardening and additional tests are on GitHub main after that deployment and are pending a fresh Render deployment confirmation; do not assume they are live until the deployed commit matches.
+- Render service: `factoryscout-marketplace`, Frankfurt, free plan. The Premium Minimal design system and persistent light/dark theme were deployed successfully on 2026-11-04 at commit `dc5ae4c` (Render deploy `dep-dblg2lrm8hqs7396sq40`). Production asset checks confirmed the new forest-green CSS tokens, theme toggle JavaScript and dark-theme styles are served. `/api/health` returned `status: ok` with the database configured.
 - GitHub main branch has responsive marketplace shell, supplier storefront route, global search/category navigation and Playwright responsive tests.
-- Live Supabase counts: 4 manufacturer rows, 5 researched supplier prospects, 0 products, 0 approved/pending supplier accounts, 0 supplier applications, 0 enquiries, 0 RFQs, 0 supplier quotes and 0 messages. There are also 0 Auth users, 0 profiles and 0 admins; the guarded first-admin bootstrap is prepared in `supabase/bootstrap_first_admin.sql`, but the owner must first create and confirm their account and run it manually. The prospects are private admin research records, not marketplace suppliers.
+- Premium Minimal design system is implemented and documented in `docs/DESIGN_SYSTEM.md`: forest-green signature accent, balanced information density, consistent tokens/components, light/dark theme switch with local persistence, and responsive rules for marketplace, supplier and product pages. The theme toggle is included in the marketplace and standalone supplier/product navigation.
+- Live Supabase counts checked 2026-11-04: 4 manufacturer rows, 10 private supplier prospects, 0 products, 0 supplier accounts, 0 supplier applications, 0 enquiries, 0 RFQs, 0 supplier quotes and 0 RFQ messages. Auth has 1 user and `public.profiles` has 1 profile with the `admin` role; there are 0 buyer and 0 supplier profiles. The first-admin bootstrap has already been completed for the existing owner account; do not rerun it. The prospects are private admin research records, not marketplace suppliers.
 - All 4 seeded manufacturer profiles are published while marked `unverified`; they are research leads, not verified suppliers. Their public API records correctly expose `rfqEnabled: false`.
 - No Supabase Edge Functions are deployed.
 - Existing schema includes manufacturer/product catalogue, RFQ/targets, buyer/supplier accounts, saved manufacturers, quotations, moderation and product image storage. Live end-to-end behavior has not yet been proven.
@@ -35,7 +36,8 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Complete category, keyword, location and capability search; filters, sorting, pagination and empty/error/loading states.
 - [ ] Complete manufacturer profiles and supplier storefronts with clear evidence labels and contact/quotation calls to action.
 - [ ] Complete product cards, detail pages, image gallery, specifications, MOQ, samples, lead time, manufacturer link and RFQ CTA.
-- [ ] Verify mobile/tablet/desktop layouts and accessibility (keyboard, focus, labels, contrast, semantic headings).
+- [x] Responsive browser regression suite covers eight viewport widths (320, 375, 390, 430, 640, 768, 900 and 1280px), mobile navigation, supplier storefront overflow, product detail/RFQ handoff, global material search, supplier product navigation, security headers and public enquiry rate limiting. A persistent light/dark theme navigation test has been added and is awaiting the latest CI run.
+- [ ] Complete accessibility audit (keyboard, focus, labels, contrast, semantic headings) and verify theme contrast in real browsers.
 - [ ] Remove placeholder imagery or label illustrative assets clearly; no fabricated products, factory photos, reviews, certifications or claims.
 
 **Pass condition:** All routes and interactions work at 320px through desktop; no broken links, overflow, dead buttons or misleading content.
