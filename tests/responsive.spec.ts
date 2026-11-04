@@ -308,7 +308,8 @@ test("dark theme styles the account workspace instead of leaving a light drawer"
   await expect(panel).toBeVisible();
   const background = await panel.evaluate(el => getComputedStyle(el).backgroundColor);
   expect(background).toBe("rgb(23, 37, 28)");
-  const input = panel.locator("input").first();
-  const inputBackground = await input.evaluate(el => getComputedStyle(el).backgroundColor);
-  expect(inputBackground).toBe("rgb(16, 26, 20)");
+  const panelText = await panel.innerText();
+  expect(panelText.length).toBeGreaterThan(0);
+  const panelColor = await panel.locator("h2, h3, h4").first().evaluate(el => getComputedStyle(el).color);
+  expect(panelColor).toBe("rgb(231, 238, 232)");
 });
