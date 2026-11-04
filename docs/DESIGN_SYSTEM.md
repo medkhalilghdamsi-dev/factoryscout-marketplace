@@ -60,19 +60,18 @@
 
 ## 4. Navigation
 
-### Marketplace
-- Brand/home
-- Global search
-- Suppliers
-- Products
-- How it works
-- For manufacturers
-- Account
+### Marketplace navigation and routes
+- Brand/home → `/`
+- Suppliers → `/suppliers`
+- Products → `/products`
+- How it works → `/how-it-works`
+- For manufacturers → `/for-manufacturers`
+- Post a request → `/request-quote`
+- Account (lazy-loaded drawer)
 - Theme switch
-- Post a request
 - Shortlist
 
-A horizontally scrollable category rail provides fast discovery without replacing the main navigation.
+A horizontally scrollable category rail supports discovery on home, supplier and product views. It is hidden on the informational and RFQ routes. The active navigation item is marked, direct URL loading is supported, and browser back/forward restores the matching route. At tablet widths the full navigation remains visible where space allows; compact tablet/mobile uses an accessible menu.
 
 ### Supplier storefront
 - Brand/home
@@ -88,13 +87,16 @@ A horizontally scrollable category rail provides fast discovery without replacin
 
 ## 5. Page layouts
 
-1. **Marketplace home:** sticky navigation, category rail, sourcing hero/search, sourcing principles, supplier discovery, catalogue, process explanation, manufacturer CTA and footer.
-2. **Supplier directory:** searchable/filterable responsive card grid with sort, save and compare actions.
-3. **Supplier storefront:** editorial supplier header, capability overview, commercial information, product listings, evidence disclosure and enquiry/RFQ CTA.
-4. **Product catalogue:** search, category/sample filters, sort and responsive product grid; honest empty state when no approved products exist.
-5. **Product detail:** breadcrumb, product visual, supplier attribution, specifications, materials, techniques, evidence and gated RFQ action.
-6. **Account workspaces:** retain the existing buyer/supplier/admin workflows; apply the same tokens, surfaces, typography, focus and responsive rules.
-7. **Dialogs:** supplier enquiry, multi-supplier RFQ, supplier application and comparison; forms stack on mobile and retain clear validation states.
+1. **Marketplace home (`/`):** sticky navigation, category rail, sourcing hero/search, sourcing principles, supplier discovery, catalogue, process explanation, manufacturer CTA and footer.
+2. **Supplier directory (`/suppliers`):** dedicated searchable/filterable responsive card grid with sort, save and compare actions.
+3. **Product catalogue (`/products`):** dedicated catalogue route with search, category/sample filters, sort and responsive product grid; honest empty state when no approved products exist.
+4. **How it works (`/how-it-works`):** focused explanation of discovery, comparison and supplier connection.
+5. **For manufacturers (`/for-manufacturers`):** focused manufacturer CTA and supplier application entry point.
+6. **RFQ (`/request-quote`):** focused RFQ flow with the form open on direct navigation; buyer authentication and supplier eligibility remain enforced.
+7. **Supplier storefront (`/suppliers/:slug`):** editorial supplier header, capability overview, commercial information, product listings, evidence disclosure and enquiry/RFQ CTA. Returning from a storefront leads back to the supplier directory.
+8. **Product detail (`/products/:id`):** breadcrumb, product visual, supplier attribution, specifications, materials, techniques, evidence and gated RFQ action. Returning from a product leads back to the catalogue.
+9. **Account workspaces:** lazy-loaded buyer/supplier/admin drawer; retain existing workflows and apply the same tokens, surfaces, typography, focus and responsive rules.
+10. **Dialogs:** supplier enquiry, multi-supplier RFQ, supplier application and comparison; forms stack on mobile and retain clear validation states.
 
 ## 6. Responsive acceptance criteria
 
