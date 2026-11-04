@@ -803,3 +803,11 @@ footer{display:flex;align-items:center;justify-content:space-between;gap:28px;fl
  .storefront-bottom-cta{width:100%;min-width:0}
  .storefront-footer{align-items:flex-start}
 }
+
+/* Mobile storefront fix: stack navigation and content instead of preserving desktop sidebar columns. */
+@media(max-width:820px){
+ .storefront-content{grid-template-columns:minmax(0,1fr)!important;gap:24px!important}
+ .storefront-main{width:100%;min-width:0}
+ .storefront-sidebar{position:static;display:flex;flex-direction:row;align-items:center;gap:14px;max-width:100%;overflow-x:auto;white-space:nowrap}
+ .storefront-sidebar>a{flex:0 0 auto}
+}
