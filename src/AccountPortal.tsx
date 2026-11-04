@@ -294,7 +294,7 @@ export default function AccountPortal() {
   const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setMessage("You have signed out."); };
 
   return <>
-    <button className="account-trigger" onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>
+    <button className="account-trigger" aria-label={session ? "Open account workspace" : "Sign in or join FactoryScout"} title={session ? "Open account workspace" : "Sign in or join FactoryScout"} onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>
     {open && <div className="account-backdrop" onClick={()=>setOpen(false)}>
       <section className="account-panel" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label="FactoryScout account">
         <div className="account-panel-toolbar"><ThemeToggle /><button className="account-close" onClick={()=>setOpen(false)} aria-label="Close">×</button></div>
