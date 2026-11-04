@@ -284,3 +284,50 @@ footer { background: #122b20; color: #d1ddd3; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Workspace refinements and narrow-screen header fit */
+.account-panel-toolbar { position: sticky; z-index: 5; top: -1px; display: flex; justify-content: flex-end; align-items: center; gap: 9px; min-height: 42px; margin: -6px 0 10px; padding: 2px 0; background: var(--fs-surface); }
+.account-panel-toolbar .account-close { position: static; float: none; flex: 0 0 40px; margin: 0; }
+.account-panel-toolbar .theme-toggle { min-height: 38px; }
+.admin-review-item button, .quote-actions button {
+  border-color: var(--fs-border); background: var(--fs-surface); color: var(--fs-text-secondary);
+}
+.admin-review-item button:first-child, .quote-actions button:first-child,
+.message-compose button, .quote-select-button {
+  border-color: var(--fs-accent-strong); background: var(--fs-accent-strong); color: var(--fs-accent-contrast);
+}
+.admin-dashboard>.account-status, .admin-dashboard .admin-rfq-quotes,
+.admin-dashboard .supplier-prospect-capabilities span { background: var(--fs-surface-muted); border-color: var(--fs-border); color: var(--fs-text-secondary); }
+.admin-dashboard .admin-rfq-quotes>b { color: var(--fs-text); }
+.admin-dashboard .admin-audit-item, .message-thread, .message-history,
+.message-bubble, .conversation-choice, .message-compose textarea {
+  border-color: var(--fs-border); background: var(--fs-surface); color: var(--fs-text-secondary);
+}
+.message-bubble.mine, .conversation-choice.active { border-color: var(--fs-border-strong); background: var(--fs-accent-soft); }
+.messaging-heading h3 { color: var(--fs-text); }
+.messaging-heading>button, .conversation-choice, .message-compose button { border-color: var(--fs-border); }
+.account-message { border-color: var(--fs-border); border-left-color: var(--fs-accent); background: var(--fs-accent-soft); color: var(--fs-text-secondary); }
+.supplier-review-card strong { background: var(--fs-surface-muted); color: var(--fs-text-secondary); }
+.supplier-review-card strong.approved, .quote-decision.selected { background: var(--fs-accent-soft); color: var(--fs-success); }
+.product-detail-page .storefront-nav { background: var(--fs-surface); }
+.product-detail-page .storefront-nav .brand { color: var(--fs-text); }
+.product-detail-page .storefront-nav .brand-light { color: var(--fs-text-muted); }
+.product-detail-page .storefront-nav .brand-mark { background: var(--fs-accent); color: var(--fs-accent-contrast); }
+.product-detail-page .storefront-nav nav button:not(.nav-cta) { color: var(--fs-text-secondary); }
+:root[data-theme="dark"] .storefront-status { border-color: var(--fs-border); background: var(--fs-surface); color: var(--fs-text-secondary); }
+:root[data-theme="dark"] .storefront-hero { background: var(--fs-surface-muted); }
+:root[data-theme="dark"] .storefront-hero-art { background: linear-gradient(145deg,#284b35,#14271b); }
+:root[data-theme="dark"] .product-detail-placeholder { background: var(--fs-surface-muted); color: var(--fs-text-secondary); }
+:root[data-theme="dark"] .storefront-sidebar a { border-color: var(--fs-border); }
+:root[data-theme="dark"] .admin-review-item button:first-child,
+:root[data-theme="dark"] .quote-actions button:first-child,
+:root[data-theme="dark"] .message-compose button,
+:root[data-theme="dark"] .quote-select-button { background: var(--fs-accent-strong); color: var(--fs-accent-contrast); }
+@media (max-width: 380px) {
+  .topbar>.brand { font-size: 16px; gap: 6px; }
+  .topbar .top-actions { gap: 4px; }
+  .topbar .top-actions .account-trigger { width: 38px; min-width: 38px; max-width: 38px; padding: 0; overflow: hidden; font-size: 0; }
+  .topbar .top-actions .account-trigger::before { content: "♙"; font-size: 16px; }
+  .topbar .top-actions .sourcing-list-button { width: 38px; min-width: 38px; padding: 0; }
+  .topbar .top-actions .sourcing-list-button>span:not(.sourcing-list-count) { display: none; }
+}
