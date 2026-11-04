@@ -329,3 +329,31 @@ test("tablet navigation stays reachable at 768px and 1024px", async ({ page }) =
   await expect(page.locator(".topbar>.nav")).toBeVisible();
   await expect(page.locator(".topbar>.nav a[href='#catalog']")).toBeVisible();
 });
+
+
+test("dedicated marketplace routes render their own page content on direct navigation", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  await page.goto("/suppliers");
+  await expect(page.locator(".page-content.page-suppliers #directory")).toBeVisible();
+  await expect(page.locator(".page-content.page-suppliers .hero")).toBeHidden();
+  await expect(page.locator(".page-content.page-suppliers .catalog")).toBeHidden();
+  await expect(page.locator('.topbar .nav a[aria-current="page"]')).toHaveText("Suppliers");
+
+  await page.goto("/products");
+  await expect(page.locator(".page-content.page-products .catalog")).toBeVisible();
+  await expect(page.locator(".page-content.page-products .directory")).toBeHidden();
+  await expect(page.locator(".page-content.page-products .catalog-empty")).toBeVisible();
+
+  await page.goto("/how-it-works");
+  await expect(page.locator(".page-content.page-how-it-works .how")).toBeVisible();
+  await expect(page.locator(".page-content.page-how-it-works .directory")).toBeHidden();
+
+  await page.goto("/for-manufacturers");
+  await expect(page.locator(".page-content.page-for-manufacturers .list-cta")).toBeVisible();
+  await expect(page.locator(".page-content.page-for-manufacturers .how")).toBeHidden();
+
+  await page.goto("/request-quote");
+  await expect(page.locator(".rfq-modal")).toBeVisible();
+  await expect(page.locator(".page-content.page-request-quote .hero")).toBeHidden();
+});
