@@ -6,12 +6,12 @@
 
 FactoryScout is an international apparel-manufacturing sourcing marketplace. Buyers discover manufacturers and product capabilities, compare suppliers, send one request to multiple factories, receive comparable quotations, and communicate with suppliers. Suppliers maintain a company storefront, submit products for moderation, receive relevant RFQs, and submit quotations. Administrators verify claims and control marketplace quality.
 
-## Current verified baseline (2026-11-03)
+## Current verified baseline (2026-11-04)
 
 - React 19 + Vite frontend, Express API, Supabase Postgres/Auth/Storage, Render web service.
-- Render service: `factoryscout-marketplace`, Frankfurt, free plan. The Premium Minimal design system and persistent light/dark theme were deployed successfully on 2026-11-04 at commit `dc5ae4c` (Render deploy `dep-dblg2lrm8hqs7396sq40`). Production asset checks confirmed the new forest-green CSS tokens, theme toggle JavaScript and dark-theme styles are served. `/api/health` returned `status: ok` with the database configured.
-- GitHub main branch has responsive marketplace shell, supplier storefront route, global search/category navigation and Playwright responsive tests.
-- Premium Minimal design system is implemented and documented in `docs/DESIGN_SYSTEM.md`: forest-green signature accent, balanced information density, consistent tokens/components, light/dark theme switch with local persistence, and responsive rules for marketplace, supplier and product pages. The theme toggle is included in the marketplace and standalone supplier/product navigation.
+- Render service: `factoryscout-marketplace`, Frankfurt, free plan. Premium Minimal UI, persistent light/dark themes, account-workspace dark styling, tablet navigation and dedicated public routes are live at commit `8df571f` (Render deploy `dep-dblgeh4dgnnc73feuj20`). Production checks confirmed forest-green tokens, dark account styles, responsive navigation, split JS assets and `/api/health` returning `status: ok` with the database configured.
+- GitHub main branch has dedicated `/suppliers`, `/products`, `/how-it-works`, `/for-manufacturers` and `/request-quote` routes, plus supplier storefront and product detail routes. Navigation, active states and direct route loading are covered by Playwright.
+- Premium Minimal design system is implemented and documented in `docs/DESIGN_SYSTEM.md`: forest-green signature accent, balanced information density, consistent tokens/components, light/dark theme switch with local persistence, and responsive rules for marketplace, supplier, product and account pages. Theme controls are included in marketplace and standalone supplier/product navigation. AccountPortal and Supabase client code are split into separate JS chunks to reduce the initial app bundle.
 - Live Supabase counts checked 2026-11-04: 4 manufacturer rows, 10 private supplier prospects, 0 products, 0 supplier accounts, 0 supplier applications, 0 enquiries, 0 RFQs, 0 supplier quotes and 0 RFQ messages. Auth has 1 user and `public.profiles` has 1 profile with the `admin` role; there are 0 buyer and 0 supplier profiles. The first-admin bootstrap has already been completed for the existing owner account; do not rerun it. The prospects are private admin research records, not marketplace suppliers.
 - All 4 seeded manufacturer profiles are published while marked `unverified`; they are research leads, not verified suppliers. Their public API records correctly expose `rfqEnabled: false`.
 - No Supabase Edge Functions are deployed.
@@ -34,10 +34,11 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 
 ### A. Marketplace UX and discovery
 - [ ] Audit every public route and navigation link.
+- [x] Dedicated marketplace routes and direct navigation are implemented for supplier directory, product catalogue, how-it-works, manufacturer information and request-quote; browser tests verify the correct section and active navigation state.
 - [ ] Complete category, keyword, location and capability search; filters, sorting, pagination and empty/error/loading states.
 - [ ] Complete manufacturer profiles and supplier storefronts with clear evidence labels and contact/quotation calls to action.
 - [ ] Complete product cards, detail pages, image gallery, specifications, MOQ, samples, lead time, manufacturer link and RFQ CTA.
-- [x] Responsive browser regression suite covers eight viewport widths (320, 375, 390, 430, 640, 768, 900 and 1280px), mobile navigation, supplier storefront overflow, product detail/RFQ handoff, global material search, supplier product navigation, security headers, public enquiry rate limiting and persistent light/dark theme navigation. GitHub CI passed the theme regression test on commit `c184d52`.
+- [x] Responsive browser regression suite: 21 Playwright tests passed on commit `8df571f`. Covers eight viewport widths (320, 375, 390, 430, 640, 768, 900 and 1280px), mobile/tablet navigation, supplier storefront overflow, product detail/RFQ handoff, global material search, supplier product navigation, security headers, public enquiry rate limiting, persistent light/dark theme navigation, account drawer dark styling and direct loading of all five dedicated marketplace routes.
 - [ ] Complete accessibility audit (keyboard, focus, labels, contrast, semantic headings) and verify theme contrast in real browsers.
 - [ ] Remove placeholder imagery or label illustrative assets clearly; no fabricated products, factory photos, reviews, certifications or claims.
 
