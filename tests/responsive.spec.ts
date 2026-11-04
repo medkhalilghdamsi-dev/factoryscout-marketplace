@@ -302,3 +302,58 @@ test("account workspace includes an accessible theme control", async ({ page }) 
   await page.locator(".account-panel-toolbar .theme-toggle").click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
+
+test("dark theme is applied consistently on supplier and product detail routes", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.goto("/suppliers/les-ateliers-bs");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".storefront-page")).toHaveCSS("background-color", "rgb(17, 25, 20)");
+  await expect(page.locator(".storefront-nav .theme-toggle")).toBeVisible();
+
+  const product = {
+    id: "test-theme-product",
+    manufacturer_id: "les-ateliers-bs",
+    name: "Theme Test Overshirt",
+    product_type: "Premium ready-to-wear",
+    description: "A test listing for route theme coverage.",
+    materials: ["Cotton twill"],
+    techniques: ["Garment dye"],
+    minimum_order: 150,
+    sample_available: true,
+    lead_time_days: 50,
+    image_url: null,
+    evidence: "Supplier-submitted",
+    manufacturers: { name: "Les Ateliers BS", region: "La Soukra, Ariana" }
+  };
+  await page.route("**/api/manufacturers", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      id: "les-ateliers-bs",
+      name: "Les Ateliers BS",
+      region: "La Soukra, Ariana",
+      category: ["Premium ready-to-wear"],
+      summary: "Approved test supplier.",
+      capabilities: ["Woven garments"],
+      moq: "100 pieces",
+      leadTime: "45 days",
+      evidence: "Supplier-published",
+      evidenceNote: "Test fixture only.",
+      exportMarkets: [],
+      status: "Approved supplier account",
+      rfqEnabled: true
+    }])
+  }));
+  await page.route("**/api/products", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([product])
+  }));
+  await page.goto("/products/test-theme-product");
+  await expect(page.getByRole("heading", { name: "Theme Test Overshirt" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".product-detail-page")).toHaveCSS("background-color", "rgb(17, 25, 20)");
+  await expect(page.locator(".product-detail-page .theme-toggle")).toBeVisible();
+});
