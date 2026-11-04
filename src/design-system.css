@@ -331,3 +331,20 @@ footer { background: #122b20; color: #d1ddd3; }
   .topbar .top-actions .sourcing-list-button { width: 38px; min-width: 38px; padding: 0; }
   .topbar .top-actions .sourcing-list-button>span:not(.sourcing-list-count) { display: none; }
 }
+
+@media (max-width: 820px) {
+  .topbar>.nav.open { background: var(--fs-surface); border-color: var(--fs-border); }
+  .topbar>.nav.open a { color: var(--fs-text-secondary); border-color: var(--fs-border); }
+}
+@media (max-width: 640px) {
+  .topbar .top-actions { gap: 4px; }
+  .topbar .top-actions .account-trigger {
+    width: 38px; min-width: 38px; max-width: 38px; min-height: 38px;
+    padding: 0; overflow: hidden; font-size: 0;
+  }
+  .topbar .top-actions .account-trigger::before { content: "♙"; font-size: 16px; }
+  .topbar .top-actions .sourcing-list-button { width: 38px; min-width: 38px; min-height: 38px; padding: 0; }
+  .topbar .top-actions .sourcing-list-button>span:not(.sourcing-list-count) { display: none; }
+  .topbar .top-actions .theme-toggle { width: 38px; min-width: 38px; min-height: 38px; padding: 0; }
+  .topbar .top-actions .theme-toggle-label { display: none; }
+}
