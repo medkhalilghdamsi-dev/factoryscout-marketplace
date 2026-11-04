@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
 import MessagingPanel from "./MessagingPanel";
@@ -18,6 +18,8 @@ export default function AccountPortal() {
   const [profile,setProfile] = useState<Profile|null>(null);
   const [supplier,setSupplier] = useState<SupplierAccount|null>(null);
   const [open,setOpen] = useState(false);
+  const accountTriggerRef = useRef<HTMLButtonElement|null>(null);
+  const accountPanelRef = useRef<HTMLElement|null>(null);
   const [mode,setMode] = useState<"signin"|"signup">("signin");
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState("");
@@ -72,6 +74,33 @@ export default function AccountPortal() {
       if (!error) setSupplierRfqs(data || []);
     }
   };
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const panel = accountPanelRef.current;
+    const focusable = () => panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [];
+    panel?.querySelector<HTMLElement>(".account-close")?.focus();
+    const onKeyDown = (event:KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setOpen(false); return; }
+      if (event.key !== "Tab") return;
+      const items = Array.from(focusable()).filter(el => el.getAttribute("aria-hidden") !== "true");
+      if (!items.length) { event.preventDefault(); panel?.focus(); return; }
+      const firstItem = items[0];
+      const lastItem = items[items.length - 1];
+      if (event.shiftKey && (document.activeElement === firstItem || !panel?.contains(document.activeElement))) {
+        event.preventDefault(); lastItem.focus();
+      } else if (!event.shiftKey && document.activeElement === lastItem) {
+        event.preventDefault(); firstItem.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      else accountTriggerRef.current?.focus();
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -294,9 +323,9 @@ export default function AccountPortal() {
   const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setMessage("You have signed out."); };
 
   return <>
-    <button className="account-trigger" aria-label={session ? "Open account workspace" : "Sign in or join FactoryScout"} title={session ? "Open account workspace" : "Sign in or join FactoryScout"} onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>
+    <button ref={accountTriggerRef} className="account-trigger" aria-label={session ? "Open account workspace" : "Sign in or join FactoryScout"} title={session ? "Open account workspace" : "Sign in or join FactoryScout"} onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>
     {open && <div className="account-backdrop" onClick={()=>setOpen(false)}>
-      <section className="account-panel" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label="FactoryScout account">
+      <section ref={accountPanelRef} className="account-panel" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label="FactoryScout account" tabIndex={-1}>
         <div className="account-panel-toolbar"><ThemeToggle /><button className="account-close" onClick={()=>setOpen(false)} aria-label="Close">×</button></div>
         <div className="eyebrow dark">FACTORYSCOUT ACCOUNT</div>
         {!supabase ? <><h2>Accounts are<br/><em>being configured.</em></h2><p className="account-copy">The secure account service is not configured in this deployment yet.</p></> :
