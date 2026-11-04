@@ -357,3 +357,16 @@ test("dark theme is applied consistently on supplier and product detail routes",
   await expect(page.locator(".product-detail-page")).toHaveCSS("background-color", "rgb(17, 25, 20)");
   await expect(page.locator(".product-detail-page .theme-toggle")).toBeVisible();
 });
+
+test("account dialog supports Escape and restores keyboard focus", async ({ page }) => {
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: /Sign in or join FactoryScout/ });
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog", { name: "FactoryScout account" })).toBeVisible();
+  await expect(page.locator(".account-close")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".account-panel")).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
