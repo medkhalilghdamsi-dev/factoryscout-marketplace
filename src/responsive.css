@@ -1286,3 +1286,26 @@ html[data-theme="dark"] .product-detail-empty p{color:#e7eee8}
   .page-shell-for-manufacturers .topbar .marketplace-global-search,
   .page-shell-request-quote .topbar .marketplace-global-search{display:none}
 }
+
+
+/* Dedicated manufacturer landing page */
+.manufacturer-page{max-width:var(--fs-content);margin:0 auto;padding:clamp(42px,7vw,88px) clamp(18px,5vw,76px) 28px}
+.manufacturer-page-intro{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(260px,.7fr);align-items:end;gap:clamp(28px,6vw,90px);padding-bottom:clamp(34px,5vw,64px);border-bottom:1px solid var(--fs-line)}
+.manufacturer-page-intro h1{margin:20px 0 0;color:var(--fs-ink);font-size:clamp(42px,6vw,76px);line-height:.99;letter-spacing:-.065em;font-weight:650}
+.manufacturer-page-intro h1 em,.manufacturer-process h2 em{color:#53765f;font-family:Georgia,serif;font-weight:400}
+.manufacturer-page-intro>p{max-width:490px;margin:0 0 5px;color:var(--fs-muted);font-size:clamp(15px,1.5vw,18px);line-height:1.75}
+.manufacturer-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:28px 0 52px}
+.manufacturer-benefits article{min-height:205px;padding:24px;border:1px solid var(--fs-line);border-radius:var(--fs-radius);background:var(--fs-white)}
+.manufacturer-benefits article>span{color:#66816c;font-size:10px;font-weight:800;letter-spacing:.13em}
+.manufacturer-benefits h2{margin:28px 0 10px;color:var(--fs-ink);font-size:clamp(18px,2vw,23px);line-height:1.2;letter-spacing:-.035em}
+.manufacturer-benefits p,.manufacturer-process>div>p{margin:0;color:var(--fs-muted);font-size:13px;line-height:1.7}
+.manufacturer-process{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1fr);gap:clamp(28px,7vw,100px);padding:34px 0 54px;border-top:1px solid var(--fs-line)}
+.manufacturer-process h2{margin:18px 0 14px;color:var(--fs-ink);font-size:clamp(30px,4vw,46px);line-height:1.04;letter-spacing:-.05em}
+.manufacturer-process ol{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.manufacturer-process li{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--fs-line)}
+.manufacturer-process li:first-child{padding-top:4px}
+.manufacturer-process li>b{color:#63806a;font-size:12px;letter-spacing:.08em}
+.manufacturer-process li span{display:grid;gap:7px}
+.manufacturer-process li strong{color:var(--fs-ink);font-size:15px}
+.manufacturer-process li small{color:var(--fs-muted);font-size:12px;line-height:1.6}
+@media(max-width:760px){.manufacturer-page-intro,.manufacturer-process{grid-template-columns:1fr}.manufacturer-page-intro{gap:20px}.manufacturer-benefits{grid-template-columns:1fr;padding-bottom:34px}.manufacturer-benefits article{min-height:0}.manufacturer-benefits h2{margin-top:18px}.manufacturer-process{gap:22px}}
