@@ -36,7 +36,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - [ ] Complete category, keyword, location and capability search; filters, sorting, pagination and empty/error/loading states.
 - [ ] Complete manufacturer profiles and supplier storefronts with clear evidence labels and contact/quotation calls to action.
 - [ ] Complete product cards, detail pages, image gallery, specifications, MOQ, samples, lead time, manufacturer link and RFQ CTA.
-- [x] Responsive browser regression suite covers eight viewport widths (320, 375, 390, 430, 640, 768, 900 and 1280px), mobile navigation, supplier storefront overflow, product detail/RFQ handoff, global material search, supplier product navigation, security headers and public enquiry rate limiting. A persistent light/dark theme navigation test has been added and is awaiting the latest CI run.
+- [x] Responsive browser regression suite covers eight viewport widths (320, 375, 390, 430, 640, 768, 900 and 1280px), mobile navigation, supplier storefront overflow, product detail/RFQ handoff, global material search, supplier product navigation, security headers, public enquiry rate limiting and persistent light/dark theme navigation. GitHub CI passed the theme regression test on commit `c184d52`.
 - [ ] Complete accessibility audit (keyboard, focus, labels, contrast, semantic headings) and verify theme contrast in real browsers.
 - [ ] Remove placeholder imagery or label illustrative assets clearly; no fabricated products, factory photos, reviews, certifications or claims.
 
