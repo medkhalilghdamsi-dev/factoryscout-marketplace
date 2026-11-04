@@ -11,12 +11,15 @@ const blankProduct = { name:"", product_type:"Streetwear", description:"", mater
 const slugify = (value:string) => value.toLowerCase().trim().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,90);
 const getRfqQuotes = (rfq:any) => (rfq.rfq_targets||[]).flatMap((target:any)=>(target.supplier_quotes||[]).map((quote:any)=>({...quote,rfq_targets:{manufacturers:target.manufacturers}})));
 
-export default function AccountPortal() {
+type AccountPortalProps = { initialOpen?:boolean; hideTrigger?:boolean; onClose?:()=>void };
+
+export default function AccountPortal({initialOpen=false,hideTrigger=false,onClose}:AccountPortalProps={}) {
   const [session,setSession] = useState<Session|null>(null);
   const [user,setUser] = useState<User|null>(null);
   const [profile,setProfile] = useState<Profile|null>(null);
   const [supplier,setSupplier] = useState<SupplierAccount|null>(null);
-  const [open,setOpen] = useState(false);
+  const [open,setOpen] = useState(initialOpen);
+  const closePortal = () => { setOpen(false); onClose?.(); };
   const [mode,setMode] = useState<"signin"|"signup">("signin");
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState("");
@@ -293,10 +296,10 @@ export default function AccountPortal() {
   const signOut = async () => { if (supabase) await supabase.auth.signOut(); setProfile(null); setSupplier(null); setMessage("You have signed out."); };
 
   return <>
-    <button className="account-trigger" onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>
-    {open && <div className="account-backdrop" onClick={()=>setOpen(false)}>
+    {!hideTrigger&&<button className="account-trigger" onClick={()=>{setOpen(true);setMessage("");void loadAccount(session?.user ?? null);}}>{session ? "My account ↗" : "Sign in / Join ↗"}</button>}
+    {open && <div className="account-backdrop" onClick={closePortal}>
       <section className="account-panel" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label="FactoryScout account">
-        <button className="account-close" onClick={()=>setOpen(false)} aria-label="Close">×</button>
+        <button className="account-close" onClick={closePortal} aria-label="Close">×</button>
         <div className="eyebrow dark">FACTORYSCOUT ACCOUNT</div>
         {!supabase ? <><h2>Accounts are<br/><em>being configured.</em></h2><p className="account-copy">The secure account service is not configured in this deployment yet.</p></> :
         !session ? <>
