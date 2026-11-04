@@ -278,3 +278,27 @@ test("manufacturer enquiry clearly explains FactoryScout review and follow-up", 
   await page.getByRole("button", { name: /Send to FactoryScout/ }).click();
   await expect(page.getByRole("status")).toContainText(/sent to FactoryScout for review/i);
 });
+
+
+test("light and dark themes toggle and persist across reloads", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.locator(".top-actions .theme-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".hero")).toHaveCSS("color", "rgb(237, 242, 237)");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.locator(".top-actions .theme-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});
+
+test("account workspace includes an accessible theme control", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Sign in or join FactoryScout/ }).click();
+  await expect(page.locator(".account-panel")).toBeVisible();
+  await expect(page.locator(".account-panel-toolbar .theme-toggle")).toBeVisible();
+  await page.locator(".account-panel-toolbar .theme-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
