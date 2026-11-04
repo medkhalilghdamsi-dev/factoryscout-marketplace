@@ -1309,3 +1309,22 @@ html[data-theme="dark"] .product-detail-empty p{color:#e7eee8}
 .manufacturer-process li strong{color:var(--fs-ink);font-size:15px}
 .manufacturer-process li small{color:var(--fs-muted);font-size:12px;line-height:1.6}
 @media(max-width:760px){.manufacturer-page-intro,.manufacturer-process{grid-template-columns:1fr}.manufacturer-page-intro{gap:20px}.manufacturer-benefits{grid-template-columns:1fr;padding-bottom:34px}.manufacturer-benefits article{min-height:0}.manufacturer-benefits h2{margin-top:18px}.manufacturer-process{gap:22px}}
+
+
+html[data-theme="dark"] .manufacturer-page-intro h1,
+html[data-theme="dark"] .manufacturer-benefits h2,
+html[data-theme="dark"] .manufacturer-process h2,
+html[data-theme="dark"] .manufacturer-process li strong{color:#e7eee8}
+html[data-theme="dark"] .manufacturer-page-intro>p,
+html[data-theme="dark"] .manufacturer-benefits p,
+html[data-theme="dark"] .manufacturer-process>div>p,
+html[data-theme="dark"] .manufacturer-process li small{color:#a5b4a8}
+html[data-theme="dark"] .manufacturer-page-intro,
+html[data-theme="dark"] .manufacturer-process,
+html[data-theme="dark"] .manufacturer-benefits article,
+html[data-theme="dark"] .manufacturer-process li{border-color:#34483a}
+html[data-theme="dark"] .manufacturer-benefits article{background:#17251c}
+html[data-theme="dark"] .manufacturer-page-intro h1 em,
+html[data-theme="dark"] .manufacturer-process h2 em,
+html[data-theme="dark"] .manufacturer-benefits article>span,
+html[data-theme="dark"] .manufacturer-process li>b{color:#a9cbb1}
