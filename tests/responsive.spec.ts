@@ -39,7 +39,7 @@ test("mobile navigation opens and category navigation remains usable", async ({ 
   await page.locator(".menu-btn").click();
   await expect(page.locator(".nav.open")).toBeVisible();
   await page.locator(".nav.open a[href='/suppliers']").click();
-  await expect(page).toHaveURL(/#directory$/);
+  await expect(page).toHaveURL(/\/suppliers$/);
 });
 
 test("supplier storefront is directly reachable on mobile without horizontal overflow", async ({ page }) => {
@@ -322,7 +322,7 @@ test("tablet navigation stays reachable at 768px and 1024px", async ({ page }) =
   await expect(menu).toBeVisible();
   await menu.click();
   await expect(page.locator(".nav.open")).toBeVisible();
-  await expect(page.locator(".nav.open a[href='#directory']")).toBeVisible();
+  await expect(page.locator(".nav.open a[href='/suppliers']")).toBeVisible();
 
   await page.setViewportSize({ width: 1024, height: 900 });
   await page.goto("/");
