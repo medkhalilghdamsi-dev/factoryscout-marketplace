@@ -350,6 +350,8 @@ test("dedicated marketplace routes render their own page content on direct navig
   await expect(page.locator(".page-content.page-how-it-works .directory")).toBeHidden();
 
   await page.goto("/for-manufacturers");
+  await expect(page.locator(".page-content.page-for-manufacturers .manufacturer-page")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Make your factory easier to discover/i })).toBeVisible();
   await expect(page.locator(".page-content.page-for-manufacturers .list-cta")).toBeVisible();
   await expect(page.locator(".page-content.page-for-manufacturers .how")).toBeHidden();
 
