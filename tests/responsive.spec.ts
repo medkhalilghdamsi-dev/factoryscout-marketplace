@@ -297,3 +297,18 @@ test("light and dark themes persist across marketplace and supplier storefront n
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   expect(await page.evaluate(() => localStorage.getItem("factoryscout-theme"))).toBe("light");
 });
+
+
+test("dark theme styles the account workspace instead of leaving a light drawer", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.locator(".theme-toggle").first().click();
+  await page.locator(".account-trigger").click();
+  const panel = page.locator(".account-panel");
+  await expect(panel).toBeVisible();
+  const background = await panel.evaluate(el => getComputedStyle(el).backgroundColor);
+  expect(background).toBe("rgb(23, 37, 28)");
+  const input = panel.locator("input").first();
+  const inputBackground = await input.evaluate(el => getComputedStyle(el).backgroundColor);
+  expect(inputBackground).toBe("rgb(16, 26, 20)");
+});
