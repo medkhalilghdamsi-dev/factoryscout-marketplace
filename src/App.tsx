@@ -85,6 +85,7 @@ export default function App() {
     window.addEventListener("popstate",syncRoute);
     return ()=>window.removeEventListener("popstate",syncRoute);
   },[]);
+  useEffect(()=>{if(page==="request-quote")setShowRfqForm(true);},[page]);
   useEffect(()=>{
     if(!storefrontId)return;
     const match=items.find(m=>m.id===decodeURIComponent(storefrontId));
