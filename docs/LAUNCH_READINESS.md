@@ -15,6 +15,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 - Live Supabase counts checked 2026-11-04: 4 manufacturer rows, 10 private supplier prospects, 0 products, 0 supplier accounts, 0 supplier applications, 0 enquiries, 0 RFQs, 0 supplier quotes and 0 RFQ messages. Auth has 1 user and `public.profiles` has 1 profile with the `admin` role; there are 0 buyer and 0 supplier profiles. The first-admin bootstrap has already been completed for the existing owner account; do not rerun it. The prospects are private admin research records, not marketplace suppliers.
 - All 4 seeded manufacturer profiles are published while marked `unverified`; they are research leads, not verified suppliers. Their public API records correctly expose `rfqEnabled: false`.
 - No Supabase Edge Functions are deployed.
+- Supabase security advisor currently reports one external-facing warning: leaked-password protection is disabled. Enable it in Supabase Auth settings before public onboarding. The owner/admin account exists, but no buyer or supplier test accounts exist yet.
 - Existing schema includes manufacturer/product catalogue, RFQ/targets, buyer/supplier accounts, saved manufacturers, quotations, moderation and product image storage. Live end-to-end behavior has not yet been proven.
 
 ## Audit findings to resolve before launch
@@ -99,6 +100,7 @@ FactoryScout is an international apparel-manufacturing sourcing marketplace. Buy
 
 ### F. Security, privacy and reliability
 - [ ] Review RLS and grants for every table, view, RPC and storage policy using buyer, supplier A, supplier B, anonymous and admin test identities.
+- [ ] Enable Supabase Auth leaked-password protection; the live security advisor currently flags this as disabled.
 - [ ] Confirm no service-role key or private secret exists in Git history, client bundle, logs or public endpoints.
 - [ ] Validate all API inputs, output redaction, CORS, headers, CSRF/session assumptions and error handling.
 - [ ] Replace the in-memory public-form limiter with durable/shared rate limiting; add bot protection, email verification and monitoring.
